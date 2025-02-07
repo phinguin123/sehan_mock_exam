@@ -143,16 +143,6 @@ export default function AdminExamsPage() {
                 required
               />
             </div>
-            <div>
-              <Label htmlFor="totalQuestions">Total Questions</Label>
-              <Input
-                id="totalQuestions"
-                name="totalQuestions"
-                type="number"
-                defaultValue={currentExam?.totalQuestions}
-                required
-              />
-            </div>
             <Button type="submit">{currentExam ? 'Update' : 'Create'}</Button>
           </form>
         </DialogContent>
@@ -175,7 +165,6 @@ export default function AdminExamsPage() {
               <TableCell>{exam.subject}</TableCell>
               <TableCell>{exam.grade}</TableCell>
               <TableCell>{exam.duration} min</TableCell>
-              <TableCell>{exam.totalQuestions}</TableCell>
               <TableCell>
                 <Button
                   variant="outline"

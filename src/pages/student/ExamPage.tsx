@@ -11,7 +11,6 @@ async function getExams(): Promise<Exam[]> {
       subject: 'Mathematics',
       grade: 9,
       duration: 60,
-      totalQuestions: 30,
     },
     {
       id: '2',
@@ -19,7 +18,6 @@ async function getExams(): Promise<Exam[]> {
       subject: 'English',
       grade: 10,
       duration: 45,
-      totalQuestions: 20,
     },
     {
       id: '3',
@@ -27,7 +25,6 @@ async function getExams(): Promise<Exam[]> {
       subject: 'Chemistry',
       grade: 11,
       duration: 90,
-      totalQuestions: 50,
     },
     {
       id: '4',
@@ -35,7 +32,6 @@ async function getExams(): Promise<Exam[]> {
       subject: 'History',
       grade: 9,
       duration: 60,
-      totalQuestions: 40,
     },
     {
       id: '5',
@@ -43,7 +39,6 @@ async function getExams(): Promise<Exam[]> {
       subject: 'Physics',
       grade: 12,
       duration: 75,
-      totalQuestions: 25,
     },
   ];
 }

@@ -1,0 +1,215 @@
+{
+    "openapi": "3.0.0",
+    "x-origin": [
+        {
+            "url": "http://localhost:5000/swagger.json",
+            "format": "swagger",
+            "version": "2.0",
+            "converter": {
+                "url": "https://github.com/mermade/oas-kit",
+                "version": "7.0.8"
+            }
+        }
+    ],
+    "paths": {
+        "/exams/": {
+            "post": {
+                "responses": {
+                    "201": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Exam"
+                                }
+                            }
+                        }
+                    }
+                },
+                "summary": "Create a new exam (Admin Only)",
+                "operationId": "post_exams",
+                "parameters": [
+                    {
+                        "name": "X-Fields",
+                        "in": "header",
+                        "description": "An optional fields mask",
+                        "schema": {
+                            "type": "string",
+                            "format": "mask"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Exam"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "tags": [
+                    "exams"
+                ]
+            },
+            "get": {
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Exam"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "summary": "Get list of all created exams",
+                "operationId": "get_exams",
+                "parameters": [
+                    {
+                        "name": "X-Fields",
+                        "in": "header",
+                        "description": "An optional fields mask",
+                        "schema": {
+                            "type": "string",
+                            "format": "mask"
+                        }
+                    }
+                ],
+                "tags": [
+                    "exams"
+                ]
+            }
+        },
+        "/exams/{exam_id}": {
+            "parameters": [
+                {
+                    "name": "exam_id",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "integer"
+                    }
+                }
+            ],
+            "get": {
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Exam"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Exam not found"
+                    }
+                },
+                "summary": "Get details of a specific exam",
+                "operationId": "get_exam",
+                "parameters": [
+                    {
+                        "name": "X-Fields",
+                        "in": "header",
+                        "description": "An optional fields mask",
+                        "schema": {
+                            "type": "string",
+                            "format": "mask"
+                        }
+                    }
+                ],
+                "tags": [
+                    "exams"
+                ]
+            }
+        },
+        "/hello/": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                },
+                "operationId": "get_hello_world",
+                "tags": [
+                    "hello"
+                ]
+            }
+        }
+    },
+    "info": {
+        "title": "Sehan Mock Exam API",
+        "version": "1.0",
+        "description": "An API for mock exams",
+        "license": {
+            "name": "MIT"
+        }
+    },
+    "tags": [
+        {
+            "name": "hello",
+            "description": "Hello World operations"
+        },
+        {
+            "name": "exams",
+            "description": "Exam-related operations"
+        }
+    ],
+    "servers": [
+        {
+            "url": "/"
+        }
+    ],
+    "components": {
+        "responses": {
+            "ParseError": {
+                "description": "When a mask can't be parsed"
+            },
+            "MaskError": {
+                "description": "When any error occurs on mask"
+            }
+        },
+        "schemas": {
+            "Exam": {
+                "required": [
+                    "grade",
+                    "id",
+                    "subject",
+                    "title"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "description": "Exam ID",
+                        "example": 1
+                    },
+                    "title": {
+                        "type": "string",
+                        "description": "Exam name",
+                        "example": "Math Exam"
+                    },
+                    "subject": {
+                        "type": "string",
+                        "description": "Subject name",
+                        "example": "Math"
+                    },
+                    "grade": {
+                        "type": "string",
+                        "description": "Grade for the exam",
+                        "example": "pre-IB or 11"
+                    }
+                },
+                "type": "object"
+            }
+        }
+    }
+}

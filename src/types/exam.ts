@@ -4,5 +4,4 @@ export interface Exam {
   subject: string;
   grade: number;
   duration: number;
-  totalQuestions: number;
 }
