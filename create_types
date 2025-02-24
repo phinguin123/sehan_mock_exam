@@ -1,0 +1,14 @@
+#!/bin/bash
+
+# Run swagger2openapi to convert Swagger to OpenAPI
+npx swagger2openapi -o openapi.json http://localhost:5000/swagger.json
+
+# Check if the first command was successful
+if [ $? -eq 0 ]; then
+  # Run openapi-typescript to generate TypeScript types
+  npx openapi-typescript openapi.json -o src/types/api.d.ts
+else
+  echo "Error: swagger2openapi command failed."
+  exit 1
+fi
+

@@ -1,6 +1,18 @@
 import api from './api';
 import axios from 'axios';
 
+// Request Interceptor: Automatically add JWT token to requests
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('access_token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
 api.interceptors.response.use(
   function (response) {
     console.log('normal response', response);
@@ -18,13 +30,24 @@ api.interceptors.response.use(
         console.log('refreshing token...');
         try {
           // Wait for the token to be refreshed
-          await axios.get(
-            `${import.meta.env.VITE_API_BASE_URL}/api/token/reissue`,
-            { withCredentials: true }
+          const refreshToken = localStorage.getItem('refresh_token');
+          const response = await axios.get(
+            `${import.meta.env.VITE_API_BASE_URL}/auth/token/reissue`,
+            {
+              headers: { Authorization: `Bearer ${refreshToken}` },
+            }
           );
           console.log('Token refreshed successfully');
 
+          const newAccessToken = response.data.access_token;
+          const newRefreshToken = response.data.refresh_token;
+
+          localStorage.setItem('access_token', newAccessToken);
+          localStorage.setItem('refresh_token', newRefreshToken);
+
           // Retry the original request and await its response
+          originalConfig.headers.Authorization = `Bearer ${newAccessToken}`;
+
           return await api.request(originalConfig);
         } catch (refreshError) {
           if (axios.isAxiosError(refreshError) && refreshError.response) {
@@ -52,6 +75,7 @@ api.interceptors.response.use(
       console.log(msg);
       // console.log(msg)
     } else if (status == 422) {
+      // when access token expires
       console.log('error 422 should redirect to login page');
       window.location.href = '/login';
       console.log('finished moving to login with status 422');

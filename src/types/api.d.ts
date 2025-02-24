@@ -4,7 +4,126 @@
  */
 
 export interface paths {
-    "/exams/": {
+    "/api/auth/get": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_auth_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["post_auth_login"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/register": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["post_auth_register"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/token/reissue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_token_reissue"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/comments/all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Fetch all comments and scores for all students in one API call */
+        get: operations["get_exam_comments_all"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/exam-submissions/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get all submitted exams (For Admins) */
+        get: operations["get_exam_submissions"];
+        put?: never;
+        /** Submit an exam (For Students) */
+        post: operations["post_exam_submissions"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/exam-submissions/{submission_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                submission_id: number;
+            };
+            cookie?: never;
+        };
+        /** Get details of a specific submitted exam */
+        get: operations["get_exam_submission"];
+        /** Grade exam submission (For admins) */
+        put: operations["put_exam_submission"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/exams/": {
         parameters: {
             query?: never;
             header?: never;
@@ -22,7 +141,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/exams/{exam_id}": {
+    "/api/exams/students": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get list of created exams for specific student */
+        get: operations["get_exams"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/exams/{exam_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -41,7 +177,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/hello/": {
+    "/api/files/{filename}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                filename: string;
+            };
+            cookie?: never;
+        };
+        /** Serve a file from the uploads directory */
+        get: operations["get_file"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/grades/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get list of all grades */
+        get: operations["get_grades"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/hello/": {
         parameters: {
             query?: never;
             header?: never;
@@ -57,6 +229,137 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/students/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get list of all students */
+        get: operations["get_students"];
+        /** Update an existing student */
+        put: operations["put_students"];
+        /** Add a new student */
+        post: operations["post_students"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/students/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get details of a specific student (less secure) */
+        get: operations["get_students"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/students/{student_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                student_id: number;
+            };
+            cookie?: never;
+        };
+        /** Get details of a specific student */
+        get: operations["get_student"];
+        put?: never;
+        post?: never;
+        /** Delete a specific student */
+        delete: operations["delete_student"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/subjects/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get list of all subjects */
+        get: operations["get_subjects"];
+        put?: never;
+        /** Add a new subject (Admin Only) */
+        post: operations["post_subjects"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/subjects/{subject_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                subject_id: number;
+            };
+            cookie?: never;
+        };
+        /** Get details of a specific subject */
+        get: operations["get_subject"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/teachers/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get list of all teachers */
+        get: operations["get_teachers"];
+        put?: never;
+        /** Add a new teacher */
+        post: operations["post_teachers"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/teachers/{teacher_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                teacher_id: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /** Update an existing teacher */
+        put: operations["put_teachers"];
+        post?: never;
+        /** Delete a specific teacher */
+        delete: operations["delete_teachers"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -66,7 +369,7 @@ export interface components {
              * @description Exam ID
              * @example 1
              */
-            id: number;
+            id?: number;
             /**
              * @description Exam name
              * @example Math Exam
@@ -82,6 +385,227 @@ export interface components {
              * @example pre-IB or 11
              */
             grade: string;
+            /**
+             * @description Exam file
+             * @example filename.pdf
+             */
+            file?: Record<string, never>;
+            /**
+             * @description The file name of the uploaded exam file
+             * @example exam_2025.pdf
+             */
+            file_name?: string;
+        };
+        ExamSubmission: {
+            /**
+             * @description Submission ID
+             * @example 101
+             */
+            id?: number;
+            /**
+             * @description Exam name
+             * @example Math Exam
+             */
+            title?: string;
+            /**
+             * @description Student name
+             * @example John Doe
+             */
+            name?: string;
+            /**
+             * @description Subject name
+             * @example Math
+             */
+            subject?: string;
+            /**
+             * @description Grade for the exam
+             * @example pre-IB or 11
+             */
+            grade?: string;
+            /**
+             * @description Graded by whom?
+             * @example phinguin
+             */
+            graded_by?: string;
+            /**
+             * @description ID of the submitted exam
+             * @example 1
+             */
+            exam_id?: number;
+            /**
+             * @description ID of the student who submitted the exam
+             * @example 1001
+             */
+            student_id?: number;
+            /**
+             * @description Original exam file
+             * @example exam_solution.pdf
+             */
+            file?: Record<string, never>;
+            /**
+             * @description The file name of the uploaded exam file
+             * @example exam_solution.pdf
+             */
+            file_name?: string;
+            /**
+             * @description Score awarded for the submission
+             * @example 85
+             */
+            score?: number;
+            /**
+             * @description Total score possible for the exam
+             * @example 100
+             */
+            total_score?: number;
+            /**
+             * @description Raw score given (unadjusted)
+             * @example 88
+             */
+            raw_score?: number;
+            /**
+             * @description Raw total score possible (unadjusted)
+             * @example 100
+             */
+            raw_total_score?: number;
+            /**
+             * @description Feedback or comments from the teacher
+             * @example Good work, but review section 3.
+             */
+            comment?: string;
+        };
+        Student: {
+            /**
+             * @description Student ID
+             * @example 1
+             */
+            id?: number;
+            /**
+             * @description Name of the student
+             * @example 홍길동
+             */
+            name: string;
+            /**
+             * @description School of the student
+             * @example 서울대학교
+             */
+            school: string;
+            /**
+             * @description Grade of the student
+             * @example pre-IB
+             */
+            grade: string;
+            /**
+             * @description Email of the student
+             * @example asdf@gmail.com
+             */
+            email: string;
+            /**
+             * @description Kakaotalk phone number of the parent(with country code)
+             * @example 821099999999
+             */
+            phone_number: string;
+            /** @description List of subjects the student is taking */
+            subjects?: components["schemas"]["Subject"][];
+        };
+        Subject: {
+            /**
+             * @description Subject ID
+             * @example 1
+             */
+            id: number;
+            /**
+             * @description Subject name
+             * @example Math
+             */
+            subject_name: string;
+        };
+        StudentProfile: {
+            /**
+             * @description Student ID
+             * @example 1
+             */
+            id?: number;
+            /**
+             * @description Name of the student
+             * @example 홍길동
+             */
+            name?: string;
+            /**
+             * @description School of the student
+             * @example 서울대학교
+             */
+            school?: string;
+            /**
+             * @description Grade of the student
+             * @example pre-IB
+             */
+            grade?: string;
+        };
+        Grade: {
+            /**
+             * @description Grade ID
+             * @example 1
+             */
+            id: number;
+            /**
+             * @description Grade name
+             * @example pre-IB
+             */
+            grade_name: string;
+        };
+        User: {
+            /**
+             * @description User email
+             * @example phinguin@gmail.com
+             */
+            email: string;
+        };
+        StudentExamComments: {
+            /** @description Student ID */
+            student_id?: number;
+            /** @description Student Name */
+            student_name?: string;
+            /** @description Student Grade */
+            student_grade?: string;
+            comments?: components["schemas"]["SubjectComment"][];
+            /** @description Student School */
+            school?: string;
+        };
+        SubjectComment: {
+            /** @description Subject ID */
+            subject_id?: number;
+            /** @description Subject Name */
+            subject_name?: string;
+            /** @description Exam Score */
+            score?: number;
+            /** @description Comment ID */
+            comment_id?: number;
+            /** @description Teacher's Comment */
+            comment?: string;
+        };
+        Teacher: {
+            /**
+             * @description Teacher ID
+             * @example 1
+             */
+            id: number;
+            /**
+             * @description Name of the teacher
+             * @example John Doe
+             */
+            name: string;
+            /**
+             * @description Email of the teacher
+             * @example asdf@gmail.com
+             */
+            email: string;
+        };
+        User_Auth: components["schemas"]["User"] & {
+            /**
+             * @description Password
+             * @example password
+             */
+            password: string;
         };
     };
     responses: {
@@ -101,12 +625,261 @@ export interface components {
         };
     };
     parameters: never;
-    requestBodies: never;
+    requestBodies: {
+        Student: {
+            content: {
+                "application/json": components["schemas"]["Student"];
+            };
+        };
+        Teacher: {
+            content: {
+                "application/json": components["schemas"]["Teacher"];
+            };
+        };
+        User_Auth: {
+            content: {
+                "application/json": components["schemas"]["User_Auth"];
+            };
+        };
+        ExamSubmission: {
+            content: {
+                "application/json": components["schemas"]["ExamSubmission"];
+            };
+        };
+    };
     headers: never;
     pathItems: never;
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    get_auth_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Login Failed */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    post_auth_login: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["User_Auth"];
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description User Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Auth Failed */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    post_auth_register: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["User_Auth"];
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Register Failed */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    get_token_reissue: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    get_exam_comments_all: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description An optional fields mask */
+                "X-Fields"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentExamComments"][];
+                };
+            };
+        };
+    };
+    get_exam_submissions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    post_exam_submissions: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description An optional fields mask */
+                "X-Fields"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["ExamSubmission"];
+        responses: {
+            /** @description Success */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExamSubmission"];
+                };
+            };
+        };
+    };
+    get_exam_submission: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description An optional fields mask */
+                "X-Fields"?: string;
+            };
+            path: {
+                submission_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExamSubmission"];
+                };
+            };
+            /** @description Submission not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    put_exam_submission: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description An optional fields mask */
+                "X-Fields"?: string;
+            };
+            path: {
+                submission_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["ExamSubmission"];
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExamSubmission"];
+                };
+            };
+            /** @description Submission not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     get_exams: {
         parameters: {
             query?: never;
@@ -157,6 +930,29 @@ export interface operations {
             };
         };
     };
+    get_exams: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description An optional fields mask */
+                "X-Fields"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Exam"][];
+                };
+            };
+        };
+    };
     get_exam: {
         parameters: {
             query?: never;
@@ -189,6 +985,49 @@ export interface operations {
             };
         };
     };
+    get_file: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                filename: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    get_grades: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description An optional fields mask */
+                "X-Fields"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Grade"][];
+                };
+            };
+        };
+    };
     get_hello_world: {
         parameters: {
             query?: never;
@@ -200,6 +1039,332 @@ export interface operations {
         responses: {
             /** @description Success */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    get_students: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description An optional fields mask */
+                "X-Fields"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Student"][];
+                };
+            };
+        };
+    };
+    put_students: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description An optional fields mask */
+                "X-Fields"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Student"];
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Student"];
+                };
+            };
+        };
+    };
+    post_students: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description An optional fields mask */
+                "X-Fields"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Student"];
+        responses: {
+            /** @description Success */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Student"];
+                };
+            };
+        };
+    };
+    get_students: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Bearer {access_token} */
+                Authorization: string;
+                /** @description An optional fields mask */
+                "X-Fields"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentProfile"];
+                };
+            };
+        };
+    };
+    get_student: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description An optional fields mask */
+                "X-Fields"?: string;
+            };
+            path: {
+                student_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Student"];
+                };
+            };
+            /** @description Student not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    delete_student: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                student_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Student successfully deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Student not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    get_subjects: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description An optional fields mask */
+                "X-Fields"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Subject"][];
+                };
+            };
+        };
+    };
+    post_subjects: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description An optional fields mask */
+                "X-Fields"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Subject"];
+            };
+        };
+        responses: {
+            /** @description Success */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Subject"];
+                };
+            };
+        };
+    };
+    get_subject: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description An optional fields mask */
+                "X-Fields"?: string;
+            };
+            path: {
+                subject_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Subject"];
+                };
+            };
+            /** @description Subject not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    get_teachers: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description An optional fields mask */
+                "X-Fields"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Teacher"][];
+                };
+            };
+        };
+    };
+    post_teachers: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description An optional fields mask */
+                "X-Fields"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Teacher"];
+        responses: {
+            /** @description Success */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Teacher"];
+                };
+            };
+        };
+    };
+    put_teachers: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description An optional fields mask */
+                "X-Fields"?: string;
+            };
+            path: {
+                teacher_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Teacher"];
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Teacher"];
+                };
+            };
+        };
+    };
+    delete_teachers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                teacher_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Teacher successfully deleted */
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };

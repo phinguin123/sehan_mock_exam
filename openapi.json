@@ -12,7 +12,240 @@
         }
     ],
     "paths": {
-        "/exams/": {
+        "/api/auth/get": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    },
+                    "404": {
+                        "description": "Login Failed"
+                    }
+                },
+                "operationId": "get_auth_get",
+                "tags": [
+                    "Auth"
+                ]
+            }
+        },
+        "/api/auth/login": {
+            "post": {
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    },
+                    "404": {
+                        "description": "User Not Found"
+                    },
+                    "500": {
+                        "description": "Auth Failed"
+                    }
+                },
+                "operationId": "post_auth_login",
+                "requestBody": {
+                    "$ref": "#/components/requestBodies/User_Auth"
+                },
+                "tags": [
+                    "Auth"
+                ]
+            }
+        },
+        "/api/auth/register": {
+            "post": {
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    },
+                    "500": {
+                        "description": "Register Failed"
+                    }
+                },
+                "operationId": "post_auth_register",
+                "requestBody": {
+                    "$ref": "#/components/requestBodies/User_Auth"
+                },
+                "tags": [
+                    "Auth"
+                ]
+            }
+        },
+        "/api/auth/token/reissue": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                },
+                "operationId": "get_token_reissue",
+                "tags": [
+                    "Auth"
+                ]
+            }
+        },
+        "/api/comments/all": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/StudentExamComments"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "summary": "Fetch all comments and scores for all students in one API call",
+                "operationId": "get_exam_comments_all",
+                "parameters": [
+                    {
+                        "name": "X-Fields",
+                        "in": "header",
+                        "description": "An optional fields mask",
+                        "schema": {
+                            "type": "string",
+                            "format": "mask"
+                        }
+                    }
+                ],
+                "tags": [
+                    "comments"
+                ]
+            }
+        },
+        "/api/exam-submissions/": {
+            "post": {
+                "responses": {
+                    "201": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ExamSubmission"
+                                }
+                            }
+                        }
+                    }
+                },
+                "summary": "Submit an exam (For Students)",
+                "operationId": "post_exam_submissions",
+                "parameters": [
+                    {
+                        "name": "X-Fields",
+                        "in": "header",
+                        "description": "An optional fields mask",
+                        "schema": {
+                            "type": "string",
+                            "format": "mask"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "$ref": "#/components/requestBodies/ExamSubmission"
+                },
+                "tags": [
+                    "exam-submissions"
+                ]
+            },
+            "get": {
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                },
+                "summary": "Get all submitted exams (For Admins)",
+                "operationId": "get_exam_submissions",
+                "tags": [
+                    "exam-submissions"
+                ]
+            }
+        },
+        "/api/exam-submissions/{submission_id}": {
+            "parameters": [
+                {
+                    "name": "submission_id",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "integer"
+                    }
+                }
+            ],
+            "put": {
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ExamSubmission"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Submission not found"
+                    }
+                },
+                "summary": "Grade exam submission (For admins)",
+                "operationId": "put_exam_submission",
+                "parameters": [
+                    {
+                        "name": "X-Fields",
+                        "in": "header",
+                        "description": "An optional fields mask",
+                        "schema": {
+                            "type": "string",
+                            "format": "mask"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "$ref": "#/components/requestBodies/ExamSubmission"
+                },
+                "tags": [
+                    "exam-submissions"
+                ]
+            },
+            "get": {
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ExamSubmission"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Submission not found"
+                    }
+                },
+                "summary": "Get details of a specific submitted exam",
+                "operationId": "get_exam_submission",
+                "parameters": [
+                    {
+                        "name": "X-Fields",
+                        "in": "header",
+                        "description": "An optional fields mask",
+                        "schema": {
+                            "type": "string",
+                            "format": "mask"
+                        }
+                    }
+                ],
+                "tags": [
+                    "exam-submissions"
+                ]
+            }
+        },
+        "/api/exams/": {
             "post": {
                 "responses": {
                     "201": {
@@ -87,7 +320,42 @@
                 ]
             }
         },
-        "/exams/{exam_id}": {
+        "/api/exams/students": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Exam"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "summary": "Get list of created exams for specific student",
+                "operationId": "get_exams",
+                "parameters": [
+                    {
+                        "name": "X-Fields",
+                        "in": "header",
+                        "description": "An optional fields mask",
+                        "schema": {
+                            "type": "string",
+                            "format": "mask"
+                        }
+                    }
+                ],
+                "tags": [
+                    "exams"
+                ]
+            }
+        },
+        "/api/exams/{exam_id}": {
             "parameters": [
                 {
                     "name": "exam_id",
@@ -132,7 +400,66 @@
                 ]
             }
         },
-        "/hello/": {
+        "/api/files/{filename}": {
+            "parameters": [
+                {
+                    "name": "filename",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                }
+            ],
+            "get": {
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                },
+                "summary": "Serve a file from the uploads directory",
+                "operationId": "get_file",
+                "tags": [
+                    "files"
+                ]
+            }
+        },
+        "/api/grades/": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Grade"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "summary": "Get list of all grades",
+                "operationId": "get_grades",
+                "parameters": [
+                    {
+                        "name": "X-Fields",
+                        "in": "header",
+                        "description": "An optional fields mask",
+                        "schema": {
+                            "type": "string",
+                            "format": "mask"
+                        }
+                    }
+                ],
+                "tags": [
+                    "grades"
+                ]
+            }
+        },
+        "/api/hello/": {
             "get": {
                 "responses": {
                     "200": {
@@ -142,6 +469,454 @@
                 "operationId": "get_hello_world",
                 "tags": [
                     "hello"
+                ]
+            }
+        },
+        "/api/students/": {
+            "post": {
+                "responses": {
+                    "201": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Student"
+                                }
+                            }
+                        }
+                    }
+                },
+                "summary": "Add a new student",
+                "operationId": "post_students",
+                "parameters": [
+                    {
+                        "name": "X-Fields",
+                        "in": "header",
+                        "description": "An optional fields mask",
+                        "schema": {
+                            "type": "string",
+                            "format": "mask"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "$ref": "#/components/requestBodies/Student"
+                },
+                "tags": [
+                    "students"
+                ]
+            },
+            "put": {
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Student"
+                                }
+                            }
+                        }
+                    }
+                },
+                "summary": "Update an existing student",
+                "operationId": "put_students",
+                "parameters": [
+                    {
+                        "name": "X-Fields",
+                        "in": "header",
+                        "description": "An optional fields mask",
+                        "schema": {
+                            "type": "string",
+                            "format": "mask"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "$ref": "#/components/requestBodies/Student"
+                },
+                "tags": [
+                    "students"
+                ]
+            },
+            "get": {
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Student"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "summary": "Get list of all students",
+                "operationId": "get_students",
+                "parameters": [
+                    {
+                        "name": "X-Fields",
+                        "in": "header",
+                        "description": "An optional fields mask",
+                        "schema": {
+                            "type": "string",
+                            "format": "mask"
+                        }
+                    }
+                ],
+                "tags": [
+                    "students"
+                ]
+            }
+        },
+        "/api/students/profile": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/StudentProfile"
+                                }
+                            }
+                        }
+                    }
+                },
+                "summary": "Get details of a specific student (less secure)",
+                "operationId": "get_students",
+                "parameters": [
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true,
+                        "description": "Bearer {access_token}",
+                        "schema": {
+                            "type": "string",
+                            "default": "Bearer "
+                        }
+                    },
+                    {
+                        "name": "X-Fields",
+                        "in": "header",
+                        "description": "An optional fields mask",
+                        "schema": {
+                            "type": "string",
+                            "format": "mask"
+                        }
+                    }
+                ],
+                "tags": [
+                    "students"
+                ]
+            }
+        },
+        "/api/students/{student_id}": {
+            "parameters": [
+                {
+                    "name": "student_id",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "integer"
+                    }
+                }
+            ],
+            "delete": {
+                "responses": {
+                    "204": {
+                        "description": "Student successfully deleted"
+                    },
+                    "404": {
+                        "description": "Student not found"
+                    }
+                },
+                "summary": "Delete a specific student",
+                "operationId": "delete_student",
+                "tags": [
+                    "students"
+                ]
+            },
+            "get": {
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Student"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Student not found"
+                    }
+                },
+                "summary": "Get details of a specific student",
+                "operationId": "get_student",
+                "parameters": [
+                    {
+                        "name": "X-Fields",
+                        "in": "header",
+                        "description": "An optional fields mask",
+                        "schema": {
+                            "type": "string",
+                            "format": "mask"
+                        }
+                    }
+                ],
+                "tags": [
+                    "students"
+                ]
+            }
+        },
+        "/api/subjects/": {
+            "post": {
+                "responses": {
+                    "201": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Subject"
+                                }
+                            }
+                        }
+                    }
+                },
+                "summary": "Add a new subject (Admin Only)",
+                "operationId": "post_subjects",
+                "parameters": [
+                    {
+                        "name": "X-Fields",
+                        "in": "header",
+                        "description": "An optional fields mask",
+                        "schema": {
+                            "type": "string",
+                            "format": "mask"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Subject"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "tags": [
+                    "subjects"
+                ]
+            },
+            "get": {
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Subject"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "summary": "Get list of all subjects",
+                "operationId": "get_subjects",
+                "parameters": [
+                    {
+                        "name": "X-Fields",
+                        "in": "header",
+                        "description": "An optional fields mask",
+                        "schema": {
+                            "type": "string",
+                            "format": "mask"
+                        }
+                    }
+                ],
+                "tags": [
+                    "subjects"
+                ]
+            }
+        },
+        "/api/subjects/{subject_id}": {
+            "parameters": [
+                {
+                    "name": "subject_id",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "integer"
+                    }
+                }
+            ],
+            "get": {
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Subject"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Subject not found"
+                    }
+                },
+                "summary": "Get details of a specific subject",
+                "operationId": "get_subject",
+                "parameters": [
+                    {
+                        "name": "X-Fields",
+                        "in": "header",
+                        "description": "An optional fields mask",
+                        "schema": {
+                            "type": "string",
+                            "format": "mask"
+                        }
+                    }
+                ],
+                "tags": [
+                    "subjects"
+                ]
+            }
+        },
+        "/api/teachers/": {
+            "post": {
+                "responses": {
+                    "201": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Teacher"
+                                }
+                            }
+                        }
+                    }
+                },
+                "summary": "Add a new teacher",
+                "operationId": "post_teachers",
+                "parameters": [
+                    {
+                        "name": "X-Fields",
+                        "in": "header",
+                        "description": "An optional fields mask",
+                        "schema": {
+                            "type": "string",
+                            "format": "mask"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "$ref": "#/components/requestBodies/Teacher"
+                },
+                "tags": [
+                    "teachers"
+                ]
+            },
+            "get": {
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Teacher"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "summary": "Get list of all teachers",
+                "operationId": "get_teachers",
+                "parameters": [
+                    {
+                        "name": "X-Fields",
+                        "in": "header",
+                        "description": "An optional fields mask",
+                        "schema": {
+                            "type": "string",
+                            "format": "mask"
+                        }
+                    }
+                ],
+                "tags": [
+                    "teachers"
+                ]
+            }
+        },
+        "/api/teachers/{teacher_id}": {
+            "parameters": [
+                {
+                    "name": "teacher_id",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "integer"
+                    }
+                }
+            ],
+            "delete": {
+                "responses": {
+                    "204": {
+                        "description": "Teacher successfully deleted"
+                    }
+                },
+                "summary": "Delete a specific teacher",
+                "operationId": "delete_teachers",
+                "tags": [
+                    "teachers"
+                ]
+            },
+            "put": {
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Teacher"
+                                }
+                            }
+                        }
+                    }
+                },
+                "summary": "Update an existing teacher",
+                "operationId": "put_teachers",
+                "parameters": [
+                    {
+                        "name": "X-Fields",
+                        "in": "header",
+                        "description": "An optional fields mask",
+                        "schema": {
+                            "type": "string",
+                            "format": "mask"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "$ref": "#/components/requestBodies/Teacher"
+                },
+                "tags": [
+                    "teachers"
                 ]
             }
         }
@@ -162,6 +937,38 @@
         {
             "name": "exams",
             "description": "Exam-related operations"
+        },
+        {
+            "name": "exam-submissions",
+            "description": "Exam submission operations"
+        },
+        {
+            "name": "students",
+            "description": "Student-related operations"
+        },
+        {
+            "name": "subjects",
+            "description": "Subject-related operations"
+        },
+        {
+            "name": "grades",
+            "description": "Grade-related operations"
+        },
+        {
+            "name": "Auth",
+            "description": "사용자 인증을 위한 API"
+        },
+        {
+            "name": "files",
+            "description": "File handling operations"
+        },
+        {
+            "name": "comments",
+            "description": "Exam Comments and Scores"
+        },
+        {
+            "name": "teachers",
+            "description": "Teacher-related operations"
         }
     ],
     "servers": [
@@ -178,11 +985,52 @@
                 "description": "When any error occurs on mask"
             }
         },
+        "requestBodies": {
+            "Student": {
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/Student"
+                        }
+                    }
+                },
+                "required": true
+            },
+            "Teacher": {
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/Teacher"
+                        }
+                    }
+                },
+                "required": true
+            },
+            "User_Auth": {
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/User_Auth"
+                        }
+                    }
+                },
+                "required": true
+            },
+            "ExamSubmission": {
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/ExamSubmission"
+                        }
+                    }
+                },
+                "required": true
+            }
+        },
         "schemas": {
             "Exam": {
                 "required": [
                     "grade",
-                    "id",
                     "subject",
                     "title"
                 ],
@@ -206,9 +1054,321 @@
                         "type": "string",
                         "description": "Grade for the exam",
                         "example": "pre-IB or 11"
+                    },
+                    "file": {
+                        "type": "object",
+                        "description": "Exam file",
+                        "example": "filename.pdf"
+                    },
+                    "file_name": {
+                        "type": "string",
+                        "description": "The file name of the uploaded exam file",
+                        "example": "exam_2025.pdf"
                     }
                 },
                 "type": "object"
+            },
+            "ExamSubmission": {
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "description": "Submission ID",
+                        "example": 101
+                    },
+                    "title": {
+                        "type": "string",
+                        "description": "Exam name",
+                        "example": "Math Exam"
+                    },
+                    "name": {
+                        "type": "string",
+                        "description": "Student name",
+                        "example": "John Doe"
+                    },
+                    "subject": {
+                        "type": "string",
+                        "description": "Subject name",
+                        "example": "Math"
+                    },
+                    "grade": {
+                        "type": "string",
+                        "description": "Grade for the exam",
+                        "example": "pre-IB or 11"
+                    },
+                    "graded_by": {
+                        "type": "string",
+                        "description": "Graded by whom?",
+                        "example": "phinguin"
+                    },
+                    "exam_id": {
+                        "type": "integer",
+                        "description": "ID of the submitted exam",
+                        "example": 1
+                    },
+                    "student_id": {
+                        "type": "integer",
+                        "description": "ID of the student who submitted the exam",
+                        "example": 1001
+                    },
+                    "file": {
+                        "type": "object",
+                        "description": "Original exam file",
+                        "example": "exam_solution.pdf"
+                    },
+                    "file_name": {
+                        "type": "string",
+                        "description": "The file name of the uploaded exam file",
+                        "example": "exam_solution.pdf"
+                    },
+                    "score": {
+                        "type": "integer",
+                        "description": "Score awarded for the submission",
+                        "example": 85
+                    },
+                    "total_score": {
+                        "type": "integer",
+                        "description": "Total score possible for the exam",
+                        "example": 100
+                    },
+                    "raw_score": {
+                        "type": "integer",
+                        "description": "Raw score given (unadjusted)",
+                        "example": 88
+                    },
+                    "raw_total_score": {
+                        "type": "integer",
+                        "description": "Raw total score possible (unadjusted)",
+                        "example": 100
+                    },
+                    "comment": {
+                        "type": "string",
+                        "description": "Feedback or comments from the teacher",
+                        "example": "Good work, but review section 3."
+                    }
+                },
+                "type": "object"
+            },
+            "Student": {
+                "required": [
+                    "email",
+                    "grade",
+                    "name",
+                    "phone_number",
+                    "school"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "description": "Student ID",
+                        "example": 1
+                    },
+                    "name": {
+                        "type": "string",
+                        "description": "Name of the student",
+                        "example": "홍길동"
+                    },
+                    "school": {
+                        "type": "string",
+                        "description": "School of the student",
+                        "example": "서울대학교"
+                    },
+                    "grade": {
+                        "type": "string",
+                        "description": "Grade of the student",
+                        "example": "pre-IB"
+                    },
+                    "email": {
+                        "type": "string",
+                        "description": "Email of the student",
+                        "example": "asdf@gmail.com"
+                    },
+                    "phone_number": {
+                        "type": "string",
+                        "description": "Kakaotalk phone number of the parent(with country code)",
+                        "example": "821099999999"
+                    },
+                    "subjects": {
+                        "type": "array",
+                        "description": "List of subjects the student is taking",
+                        "items": {
+                            "$ref": "#/components/schemas/Subject"
+                        }
+                    }
+                },
+                "type": "object"
+            },
+            "Subject": {
+                "required": [
+                    "id",
+                    "subject_name"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "description": "Subject ID",
+                        "example": 1
+                    },
+                    "subject_name": {
+                        "type": "string",
+                        "description": "Subject name",
+                        "example": "Math"
+                    }
+                },
+                "type": "object"
+            },
+            "StudentProfile": {
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "description": "Student ID",
+                        "example": 1
+                    },
+                    "name": {
+                        "type": "string",
+                        "description": "Name of the student",
+                        "example": "홍길동"
+                    },
+                    "school": {
+                        "type": "string",
+                        "description": "School of the student",
+                        "example": "서울대학교"
+                    },
+                    "grade": {
+                        "type": "string",
+                        "description": "Grade of the student",
+                        "example": "pre-IB"
+                    }
+                },
+                "type": "object"
+            },
+            "Grade": {
+                "required": [
+                    "grade_name",
+                    "id"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "description": "Grade ID",
+                        "example": 1
+                    },
+                    "grade_name": {
+                        "type": "string",
+                        "description": "Grade name",
+                        "example": "pre-IB"
+                    }
+                },
+                "type": "object"
+            },
+            "User": {
+                "required": [
+                    "email"
+                ],
+                "properties": {
+                    "email": {
+                        "type": "string",
+                        "description": "User email",
+                        "example": "phinguin@gmail.com"
+                    }
+                },
+                "type": "object"
+            },
+            "StudentExamComments": {
+                "properties": {
+                    "student_id": {
+                        "type": "integer",
+                        "description": "Student ID"
+                    },
+                    "student_name": {
+                        "type": "string",
+                        "description": "Student Name"
+                    },
+                    "student_grade": {
+                        "type": "string",
+                        "description": "Student Grade"
+                    },
+                    "comments": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/SubjectComment"
+                        }
+                    },
+                    "school": {
+                        "type": "string",
+                        "description": "Student School"
+                    }
+                },
+                "type": "object"
+            },
+            "SubjectComment": {
+                "properties": {
+                    "subject_id": {
+                        "type": "integer",
+                        "description": "Subject ID"
+                    },
+                    "subject_name": {
+                        "type": "string",
+                        "description": "Subject Name"
+                    },
+                    "score": {
+                        "type": "number",
+                        "description": "Exam Score"
+                    },
+                    "comment_id": {
+                        "type": "integer",
+                        "description": "Comment ID"
+                    },
+                    "comment": {
+                        "type": "string",
+                        "description": "Teacher's Comment"
+                    }
+                },
+                "type": "object"
+            },
+            "Teacher": {
+                "required": [
+                    "email",
+                    "id",
+                    "name"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "description": "Teacher ID",
+                        "example": 1
+                    },
+                    "name": {
+                        "type": "string",
+                        "description": "Name of the teacher",
+                        "example": "John Doe"
+                    },
+                    "email": {
+                        "type": "string",
+                        "description": "Email of the teacher",
+                        "example": "asdf@gmail.com"
+                    }
+                },
+                "type": "object"
+            },
+            "User_Auth": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/User"
+                    },
+                    {
+                        "required": [
+                            "password"
+                        ],
+                        "properties": {
+                            "password": {
+                                "type": "string",
+                                "description": "Password",
+                                "example": "password"
+                            }
+                        },
+                        "type": "object"
+                    }
+                ]
             }
         }
     }
