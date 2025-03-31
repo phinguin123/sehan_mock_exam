@@ -12,6 +12,28 @@
         }
     ],
     "paths": {
+        "/api/auth/admin/login": {
+            "post": {
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    },
+                    "404": {
+                        "description": "Admin Not Found"
+                    },
+                    "500": {
+                        "description": "Auth Failed"
+                    }
+                },
+                "operationId": "post_auth_admin_login",
+                "requestBody": {
+                    "$ref": "#/components/requestBodies/User_Auth"
+                },
+                "tags": [
+                    "Auth"
+                ]
+            }
+        },
         "/api/auth/get": {
             "get": {
                 "responses": {
@@ -175,6 +197,39 @@
                     }
                 }
             ],
+            "get": {
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ExamSubmission"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Submission not found"
+                    }
+                },
+                "summary": "Get details of a specific submitted exam",
+                "operationId": "get_exam_submission",
+                "parameters": [
+                    {
+                        "name": "X-Fields",
+                        "in": "header",
+                        "description": "An optional fields mask",
+                        "schema": {
+                            "type": "string",
+                            "format": "mask"
+                        }
+                    }
+                ],
+                "tags": [
+                    "exam-submissions"
+                ]
+            },
             "put": {
                 "responses": {
                     "200": {
@@ -211,35 +266,17 @@
                     "exam-submissions"
                 ]
             },
-            "get": {
+            "delete": {
                 "responses": {
-                    "200": {
-                        "description": "Success",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ExamSubmission"
-                                }
-                            }
-                        }
+                    "204": {
+                        "description": "Submitted exam successfully deleted"
                     },
                     "404": {
                         "description": "Submission not found"
                     }
                 },
-                "summary": "Get details of a specific submitted exam",
-                "operationId": "get_exam_submission",
-                "parameters": [
-                    {
-                        "name": "X-Fields",
-                        "in": "header",
-                        "description": "An optional fields mask",
-                        "schema": {
-                            "type": "string",
-                            "format": "mask"
-                        }
-                    }
-                ],
+                "summary": "Delete a specific submission",
+                "operationId": "delete_exam_submission",
                 "tags": [
                     "exam-submissions"
                 ]
@@ -398,6 +435,45 @@
                 "tags": [
                     "exams"
                 ]
+            },
+            "delete": {
+                "responses": {
+                    "204": {
+                        "description": "Exam successfully deleted"
+                    },
+                    "404": {
+                        "description": "Exam not found"
+                    }
+                },
+                "summary": "Delete a specific exam",
+                "operationId": "delete_exam",
+                "tags": [
+                    "exams"
+                ]
+            }
+        },
+        "/api/files/reports/{filename}": {
+            "parameters": [
+                {
+                    "name": "filename",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                }
+            ],
+            "get": {
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                },
+                "summary": "Serve a file from the uploads directory",
+                "operationId": "get_file",
+                "tags": [
+                    "files"
+                ]
             }
         },
         "/api/files/{filename}": {
@@ -472,6 +548,94 @@
                 ]
             }
         },
+        "/api/reports/": {
+            "post": {
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                },
+                "summary": "Generate PDF reports",
+                "operationId": "post_generate_student_report",
+                "tags": [
+                    "reports"
+                ]
+            },
+            "get": {
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                },
+                "summary": "Download all student reports",
+                "operationId": "get_generate_student_report",
+                "tags": [
+                    "reports"
+                ]
+            }
+        },
+        "/api/reports/{student_id}": {
+            "parameters": [
+                {
+                    "name": "student_id",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "integer"
+                    }
+                }
+            ],
+            "get": {
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                },
+                "summary": "Return the pre-generated PDF report for a student",
+                "operationId": "get_student_report",
+                "tags": [
+                    "reports"
+                ]
+            }
+        },
+        "/api/settings/": {
+            "post": {
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                },
+                "summary": "Send alimtalk message for testing (for all students)",
+                "operationId": "post_settings",
+                "tags": [
+                    "settings"
+                ]
+            }
+        },
+        "/api/settings/{student_id}": {
+            "parameters": [
+                {
+                    "name": "student_id",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "integer"
+                    }
+                }
+            ],
+            "post": {
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                },
+                "summary": "Send alimtalk message for testing (for one student)",
+                "operationId": "post_settings",
+                "tags": [
+                    "settings"
+                ]
+            }
+        },
         "/api/students/": {
             "post": {
                 "responses": {
@@ -488,39 +652,6 @@
                 },
                 "summary": "Add a new student",
                 "operationId": "post_students",
-                "parameters": [
-                    {
-                        "name": "X-Fields",
-                        "in": "header",
-                        "description": "An optional fields mask",
-                        "schema": {
-                            "type": "string",
-                            "format": "mask"
-                        }
-                    }
-                ],
-                "requestBody": {
-                    "$ref": "#/components/requestBodies/Student"
-                },
-                "tags": [
-                    "students"
-                ]
-            },
-            "put": {
-                "responses": {
-                    "200": {
-                        "description": "Success",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Student"
-                                }
-                            }
-                        }
-                    }
-                },
-                "summary": "Update an existing student",
-                "operationId": "put_students",
                 "parameters": [
                     {
                         "name": "X-Fields",
@@ -568,6 +699,39 @@
                         }
                     }
                 ],
+                "tags": [
+                    "students"
+                ]
+            },
+            "put": {
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Student"
+                                }
+                            }
+                        }
+                    }
+                },
+                "summary": "Update an existing student",
+                "operationId": "put_students",
+                "parameters": [
+                    {
+                        "name": "X-Fields",
+                        "in": "header",
+                        "description": "An optional fields mask",
+                        "schema": {
+                            "type": "string",
+                            "format": "mask"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "$ref": "#/components/requestBodies/Student"
+                },
                 "tags": [
                     "students"
                 ]
@@ -626,21 +790,6 @@
                     }
                 }
             ],
-            "delete": {
-                "responses": {
-                    "204": {
-                        "description": "Student successfully deleted"
-                    },
-                    "404": {
-                        "description": "Student not found"
-                    }
-                },
-                "summary": "Delete a specific student",
-                "operationId": "delete_student",
-                "tags": [
-                    "students"
-                ]
-            },
             "get": {
                 "responses": {
                     "200": {
@@ -670,6 +819,21 @@
                         }
                     }
                 ],
+                "tags": [
+                    "students"
+                ]
+            },
+            "delete": {
+                "responses": {
+                    "204": {
+                        "description": "Student successfully deleted"
+                    },
+                    "404": {
+                        "description": "Student not found"
+                    }
+                },
+                "summary": "Delete a specific student",
+                "operationId": "delete_student",
                 "tags": [
                     "students"
                 ]
@@ -874,18 +1038,6 @@
                     }
                 }
             ],
-            "delete": {
-                "responses": {
-                    "204": {
-                        "description": "Teacher successfully deleted"
-                    }
-                },
-                "summary": "Delete a specific teacher",
-                "operationId": "delete_teachers",
-                "tags": [
-                    "teachers"
-                ]
-            },
             "put": {
                 "responses": {
                     "200": {
@@ -915,6 +1067,18 @@
                 "requestBody": {
                     "$ref": "#/components/requestBodies/Teacher"
                 },
+                "tags": [
+                    "teachers"
+                ]
+            },
+            "delete": {
+                "responses": {
+                    "204": {
+                        "description": "Teacher successfully deleted"
+                    }
+                },
+                "summary": "Delete a specific teacher",
+                "operationId": "delete_teachers",
                 "tags": [
                     "teachers"
                 ]
@@ -969,6 +1133,14 @@
         {
             "name": "teachers",
             "description": "Teacher-related operations"
+        },
+        {
+            "name": "reports",
+            "description": "Student report operations"
+        },
+        {
+            "name": "settings",
+            "description": "Utility-related operations"
         }
     ],
     "servers": [
@@ -1122,28 +1294,38 @@
                     },
                     "score": {
                         "type": "integer",
-                        "description": "Score awarded for the submission",
-                        "example": 85
+                        "description": "Score out of 7",
+                        "example": 7
                     },
                     "total_score": {
-                        "type": "integer",
-                        "description": "Total score possible for the exam",
-                        "example": 100
+                        "type": "string",
+                        "description": "Raw total score for the exam",
+                        "example": 20
                     },
                     "raw_score": {
-                        "type": "integer",
-                        "description": "Raw score given (unadjusted)",
-                        "example": 88
+                        "type": "string",
+                        "description": "Raw score given",
+                        "example": 15
                     },
                     "raw_total_score": {
                         "type": "integer",
-                        "description": "Raw total score possible (unadjusted)",
-                        "example": 100
+                        "description": "Percentile out of 100",
+                        "example": 75
                     },
                     "comment": {
                         "type": "string",
                         "description": "Feedback or comments from the teacher",
                         "example": "Good work, but review section 3."
+                    },
+                    "text_attachment": {
+                        "type": "string",
+                        "description": "Text attachment for the submission",
+                        "example": "This is a text attachment"
+                    },
+                    "comment_file_name": {
+                        "type": "string",
+                        "description": "The file name of the uploaded comment file",
+                        "example": "uuid_comment_file.pdf"
                     }
                 },
                 "type": "object"

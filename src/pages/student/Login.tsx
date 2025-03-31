@@ -31,7 +31,7 @@ export default function LoginPage() {
 
     try {
       console.log('api base url', import.meta.env.VITE_API_BASE_URL);
-      console.log('Test url', import.meta.env.VITE_TEST_URL);
+      console.log('api MODE', import.meta.env.MODE);
       // Send the form data to the backend
       const response = await api.post('/auth/login', {
         email,

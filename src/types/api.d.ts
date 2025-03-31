@@ -4,6 +4,22 @@
  */
 
 export interface paths {
+    "/api/auth/admin/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["post_auth_admin_login"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/get": {
         parameters: {
             query?: never;
@@ -117,7 +133,8 @@ export interface paths {
         /** Grade exam submission (For admins) */
         put: operations["put_exam_submission"];
         post?: never;
-        delete?: never;
+        /** Delete a specific submission */
+        delete: operations["delete_exam_submission"];
         options?: never;
         head?: never;
         patch?: never;
@@ -169,6 +186,26 @@ export interface paths {
         };
         /** Get details of a specific exam */
         get: operations["get_exam"];
+        put?: never;
+        post?: never;
+        /** Delete a specific exam */
+        delete: operations["delete_exam"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/files/reports/{filename}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                filename: string;
+            };
+            cookie?: never;
+        };
+        /** Serve a file from the uploads directory */
+        get: operations["get_file"];
         put?: never;
         post?: never;
         delete?: never;
@@ -223,6 +260,79 @@ export interface paths {
         get: operations["get_hello_world"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reports/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Download all student reports */
+        get: operations["get_generate_student_report"];
+        put?: never;
+        /** Generate PDF reports */
+        post: operations["post_generate_student_report"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reports/{student_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                student_id: number;
+            };
+            cookie?: never;
+        };
+        /** Return the pre-generated PDF report for a student */
+        get: operations["get_student_report"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/settings/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Send alimtalk message for testing (for all students) */
+        post: operations["post_settings"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/settings/{student_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                student_id: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Send alimtalk message for testing (for one student) */
+        post: operations["post_settings"];
         delete?: never;
         options?: never;
         head?: never;
@@ -448,23 +558,23 @@ export interface components {
              */
             file_name?: string;
             /**
-             * @description Score awarded for the submission
-             * @example 85
+             * @description Score out of 7
+             * @example 7
              */
             score?: number;
             /**
-             * @description Total score possible for the exam
-             * @example 100
+             * @description Raw total score for the exam
+             * @example 20
              */
-            total_score?: number;
+            total_score?: string;
             /**
-             * @description Raw score given (unadjusted)
-             * @example 88
+             * @description Raw score given
+             * @example 15
              */
-            raw_score?: number;
+            raw_score?: string;
             /**
-             * @description Raw total score possible (unadjusted)
-             * @example 100
+             * @description Percentile out of 100
+             * @example 75
              */
             raw_total_score?: number;
             /**
@@ -472,6 +582,16 @@ export interface components {
              * @example Good work, but review section 3.
              */
             comment?: string;
+            /**
+             * @description Text attachment for the submission
+             * @example This is a text attachment
+             */
+            text_attachment?: string;
+            /**
+             * @description The file name of the uploaded comment file
+             * @example uuid_comment_file.pdf
+             */
+            comment_file_name?: string;
         };
         Student: {
             /**
@@ -652,6 +772,38 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    post_auth_admin_login: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["User_Auth"];
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Admin Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Auth Failed */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     get_auth_get: {
         parameters: {
             query?: never;
@@ -880,6 +1032,33 @@ export interface operations {
             };
         };
     };
+    delete_exam_submission: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                submission_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Submitted exam successfully deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Submission not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     get_exams: {
         parameters: {
             query?: never;
@@ -985,6 +1164,53 @@ export interface operations {
             };
         };
     };
+    delete_exam: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                exam_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Exam successfully deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Exam not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    get_file: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                filename: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     get_file: {
         parameters: {
             query?: never;
@@ -1033,6 +1259,100 @@ export interface operations {
             query?: never;
             header?: never;
             path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    get_generate_student_report: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    post_generate_student_report: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    get_student_report: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                student_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    post_settings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    post_settings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                student_id: number;
+            };
             cookie?: never;
         };
         requestBody?: never;

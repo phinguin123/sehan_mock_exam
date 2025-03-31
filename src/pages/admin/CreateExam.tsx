@@ -109,7 +109,7 @@ export default function AdminExamsPage() {
         if (currentExam && currentExam.id !== undefined) {
           formData.append('id', currentExam.id.toString());
         }
-        const response = await api.put('/exams/', formData, {
+        const response = await api.put(`/exams/${currentExam.id}`, formData, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
@@ -132,9 +132,9 @@ export default function AdminExamsPage() {
           alert('Failed to create exam');
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving exam:', error);
-      alert('There was an error saving the exam.');
+      alert(`Error: ${error.response?.data?.message}`);
     }
 
     setIsDialogOpen(false);
@@ -143,13 +143,9 @@ export default function AdminExamsPage() {
   };
 
   const handleDelete = async (id: number | undefined) => {
-    const response = await fetch('/exams/', {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id }),
-    });
-    if (response.ok) {
-      alert('Exam updated successfully');
+    const response = await api.delete(`/exams/${id}`);
+    if (response.status === 204) {
+      alert('Exam deleted successfully');
       fetchExams();
     } else {
       alert('Failed to update exam');

@@ -8,6 +8,7 @@ from flask_jwt_extended import (
     create_refresh_token,
     get_jwt_identity,
     jwt_required,
+    get_jwt,
 )
 
 
@@ -57,10 +58,34 @@ class TokenReissue(Resource):
     def get(self):
         # The identity of the user will be the same as the one that requested the refresh token
         current_user_id = get_jwt_identity()
+        jwt_token = get_jwt()
+
+        role = jwt_token["role"]
+
+        additional_claims = {}
+
+        if role == "student":
+            student_sql = "SELECT * FROM students WHERE id = %s"
+            student = db_helper.fetch_one(student_sql, (current_user_id,))
+            if not student:
+                return {"message": "Student Not Found"}, 404
+
+            additional_claims["role"] = "student"
+        elif role == "teacher":
+            teacher_sql = "SELECT * FROM teachers WHERE id = %s"
+            teacher = db_helper.fetch_one(teacher_sql, (current_user_id,))
+            if not teacher:
+                return {"message": "Teacher Not Found"}, 404
+
+            additional_claims["role"] = "teacher"
 
         # Create new access token
-        new_access_token = create_access_token(identity=current_user_id)
-        new_refresh_token = create_refresh_token(identity=current_user_id)
+        new_access_token = create_access_token(
+            identity=current_user_id, additional_claims=additional_claims
+        )
+        new_refresh_token = create_refresh_token(
+            identity=current_user_id, additional_claims=additional_claims
+        )
 
         return {
             "access_token": new_access_token,
@@ -113,11 +138,47 @@ class AuthLogin(Resource):
         ):  # 비밀번호 일치 확인
             return {"message": "Auth Failed"}, 500
 
+        additional_claims = {"role": "student"}
+
         # Generate JWT token
-        access_token = create_access_token(identity=student["id"])
-        refresh_token = create_refresh_token(identity=student["id"])
+        access_token = create_access_token(
+            identity=student["id"], additional_claims=additional_claims
+        )
+        refresh_token = create_refresh_token(
+            identity=student["id"], additional_claims=additional_claims
+        )
 
         return {"access_token": access_token, "refresh_token": refresh_token}, 200
+
+
+@Auth.route("/logout")
+class AuthLogout(Resource):
+    @Auth.expect(jwt_fields)
+    @jwt_required()
+    @Auth.doc(responses={200: "Success"})
+    @Auth.doc(responses={404: "Logout Failed"})
+    def post(self):
+        jwt_token = get_jwt()
+        current_user_id = get_jwt_identity()
+
+        role = jwt_token["role"]
+
+        if role == "student":
+            student_id = current_user_id
+            student_sql = "SELECT * FROM students WHERE id = %s"
+            student = db_helper.fetch_one(student_sql, (student_id,))
+            if not student:
+                return {"message": "Student Not Found"}, 404
+
+            return {"redirect_url": "/login"}, 200
+        elif role == "teacher":
+            teacher_id = current_user_id
+            teacher_sql = "SELECT * FROM teachers WHERE id = %s"
+            teacher = db_helper.fetch_one(teacher_sql, (teacher_id,))
+            if not teacher:
+                return {"message": "Teacher Not Found"}, 404
+
+            return {"redirect_url": "/secure-sehan-admin/login"}, 200
 
 
 @Auth.route("/get")
@@ -161,8 +222,42 @@ class AuthAdminLogin(Resource):
         ):
             return {"message": "Auth Failed"}, 500
 
+        additional_claims = {"role": "teacher"}
+
         # Generate JWT token for admin
-        access_token = create_access_token(identity=teacher["id"])
-        refresh_token = create_refresh_token(identity=teacher["id"])
+        access_token = create_access_token(
+            identity=teacher["id"], additional_claims=additional_claims
+        )
+        refresh_token = create_refresh_token(
+            identity=teacher["id"], additional_claims=additional_claims
+        )
 
         return {"access_token": access_token, "refresh_token": refresh_token}, 200
+
+
+@Auth.route("/token/verify", methods=["GET"])
+class TokenVerify(Resource):
+    @jwt_required()
+    def get(self):
+        # The identity of the user will be the same as the one that requested the refresh token
+        current_user_id = get_jwt_identity()
+        jwt_token = get_jwt()
+
+        role = jwt_token["role"]
+
+        if role == "student":
+            student_sql = "SELECT * FROM students WHERE id = %s"
+            student = db_helper.fetch_one(student_sql, (current_user_id,))
+            if not student:
+                return {"message": "Student Not Found"}, 404
+
+            return {"role": "student"}, 200
+        elif role == "teacher":
+            teacher_sql = "SELECT * FROM teachers WHERE id = %s"
+            teacher = db_helper.fetch_one(teacher_sql, (current_user_id,))
+            if not teacher:
+                return {"message": "Teacher Not Found"}, 404
+            print("role is teacher")
+            return {"role": "teacher"}, 200
+        else:
+            return {"message": "Role Not Found"}, 404

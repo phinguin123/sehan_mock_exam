@@ -6,6 +6,7 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
+flask_sever/logs
 
 node_modules
 dist
@@ -28,3 +29,10 @@ dist-ssr
 # Python virtual env
 flask_server/venv
 flask_server/__pycache__
+
+# Uploaded files
+flask_server/uploads
+flask_server/reports
+
+# Logs
+flask_server/logs

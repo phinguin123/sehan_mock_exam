@@ -4,6 +4,7 @@ import { components } from '@/types/api';
 import { BookOpen, GraduationCap, School, Clock, User } from 'lucide-react';
 import { motion } from 'framer-motion';
 import api from '@/apis/axiosInterceptor';
+import LogoutButton from '@/components/LogoutButton';
 
 type Exam = components['schemas']['Exam'];
 
@@ -62,6 +63,7 @@ export default function ExamPage() {
   const [studentProfile, setStudentProfile] = useState<StudentProfile>({});
   const [loading, setLoading] = useState<boolean>(true);
   const [timeRemaining, setTimeRemaining] = useState(180 * 60);
+  const [hoursBefore, setHoursBefore] = useState(0);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -82,8 +84,19 @@ export default function ExamPage() {
       console.log('received response for student profile', response.data);
       setStudentProfile(response.data);
     };
+    const fetchTimeRemaining = async () => {
+      try {
+        const response = await api.get('/exams/time_remaining');
+        console.log(response);
+        setTimeRemaining(response.data.remaining_time);
+        setHoursBefore(response.data.hours_before);
+      } catch (error) {
+        console.error('error fetching time remaining', error);
+      }
+    };
     loadExams();
     fetchStudentProfile();
+    fetchTimeRemaining();
   }, []);
 
   if (loading) {
@@ -105,11 +118,15 @@ export default function ExamPage() {
     <div className="min-h-screen bg-gradient-to-r from-blue-500 to-purple-600 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         <h1 className="text-5xl font-extrabold text-white text-center mb-12">
-          2025 Sehan Mock Exam
+          2025 세한아카데미 IB 학력평가
         </h1>
         <div className="flex flex-col lg:flex-row gap-8 justify-center">
           <div className="bg-white bg-opacity-20 backdrop-filter backdrop-blur-lg rounded-xl p-8">
-            <ExamList initialExams={exams} />
+            <ExamList
+              initialExams={exams}
+              timeRemaining={timeRemaining}
+              hoursBefore={hoursBefore}
+            />
           </div>
           <div className="lg:w-1/3">
             <motion.div
@@ -118,9 +135,17 @@ export default function ExamPage() {
               transition={{ duration: 0.5, delay: 0.2 }}
               className="bg-white rounded-xl shadow-xl p-6"
             >
-              <h2 className="text-2xl font-bold mb-6 text-gray-800">
-                Exam Information
-              </h2>
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-gray-800">
+                  Exam Information
+                </h2>
+                <LogoutButton
+                  variant="ghost"
+                  size="sm"
+                  className="text-gray-600 hover:text-red-500"
+                />
+              </div>
+
               <div className="mb-6">
                 <div className="flex items-center mb-2">
                   <User className="w-5 h-5 mr-2 text-blue-500" />
@@ -175,9 +200,10 @@ export default function ExamPage() {
                   Important Instructions
                 </h3>
                 <ul className="list-disc list-inside text-sm text-gray-600">
-                  <li>Read all questions carefully</li>
-                  <li>Answer all questions</li>
-                  <li>You may use a calculator if needed</li>
+                  <li>You can only submit the exam once</li>
+                  <li>Exam will end when the time ends</li>
+                  <li>Only submit pdf files</li>
+                  <li>File size can't exceed 100MB</li>
                 </ul>
               </div>
               {/* <div>

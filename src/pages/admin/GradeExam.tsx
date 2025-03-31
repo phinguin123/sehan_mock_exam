@@ -1,4 +1,4 @@
-import { useState, useEffect, ChangeEvent, FormEvent } from 'react';
+import { useState, useEffect, useRef, ChangeEvent, FormEvent } from 'react';
 import api from '@/apis/axiosInterceptor';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,15 +40,15 @@ import {
 } from '@/components/ui/pagination';
 import {
   FileIcon,
-  CalendarIcon,
   UserIcon,
   BookmarkIcon,
   ArrowUpIcon,
-  TagIcon,
   PaperclipIcon,
   TrashIcon,
+  Upload,
 } from 'lucide-react';
 import { components } from '@/types/api';
+import axios, { isAxiosError } from 'axios';
 
 type ExamSubmission = components['schemas']['ExamSubmission'];
 
@@ -88,29 +88,12 @@ interface StudentName {
   duplicate?: string;
 }
 
-interface Homework {
-  id: number;
-  title: string;
-  subject: string;
-  grades: string[];
-  levels: string[];
-  type: string;
-  gradedBy: string;
-  studentName: string;
-  duplicate?: string;
-  submissionDate: string;
-  dueDate: string;
-  assignedDate: string;
-  file_name?: string;
-  textAttachment?: string;
-  rawScore?: string;
-  totalScore?: string;
-  comment?: string;
-}
-
 interface DeleteConfirmation {
   show: boolean;
   id: number | null;
+  type: 'homework' | 'commentFile';
+  commentFileName?: string;
+  studentId?: number;
 }
 
 interface Filters {
@@ -131,12 +114,12 @@ export default function GradeExam() {
   const [comment, setComment] = useState<string>('');
   const [selectedHomework, setSelectedHomework] =
     useState<ExamSubmission | null>(null);
-  const [rawScore, setRawScore] = useState<number>(0);
-  const [totalScore, setTotalScore] = useState<number>(0);
+  const [rawScore, setRawScore] = useState<string>('');
+  const [totalScore, setTotalScore] = useState<string>('');
   const [calculatedScore, setCalculatedScore] = useState<number>(0);
   const [activeTab, setActiveTab] = useState<string>('graded');
   const [deleteConfirmation, setDeleteConfirmation] =
-    useState<DeleteConfirmation>({ show: false, id: null });
+    useState<DeleteConfirmation>({ show: false, id: null, type: 'homework' });
   const [studentNames, setStudentNames] = useState<StudentName[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [pendingCurrentPage, setPendingCurrentPage] = useState<number>(1);
@@ -146,6 +129,8 @@ export default function GradeExam() {
   const [gradedTotalPages, setGradedTotalPages] = useState<number>(0);
   const [gradedMatchingCounts, setGradedMatchingCounts] = useState<number>(0);
   const [pendingMatchingCounts, setPendingMatchingCounts] = useState<number>(0);
+  const [teacherFile, setTeacherFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     console.log('hi');
@@ -176,11 +161,10 @@ export default function GradeExam() {
         },
       });
 
-      console.log('fetchhomework response', response);
-
+      // console.log('fetchhomework response', response);
       const { exam_submissions, total_pages, total_count } = response.data;
 
-      console.log('data', exam_submissions);
+      // console.log('data', exam_submissions);
 
       if (status === 'graded') {
         setGradedHomeworks(exam_submissions);
@@ -204,38 +188,78 @@ export default function GradeExam() {
   const fetchPendingHomework = (page: number) =>
     fetchHomework(page, pageSize, 'pending');
 
+  // For deleting homework
   const handleDelete = (id: number) => {
-    setDeleteConfirmation({ show: true, id });
+    setDeleteConfirmation({ show: true, id, type: 'homework' });
+  };
+
+  // For deleting comment file
+  const handleDeleteCommentFile = (
+    commentFileName: string,
+    studentId: number,
+    homeworkId: number
+  ) => {
+    setDeleteConfirmation({
+      show: true,
+      id: homeworkId,
+      type: 'commentFile',
+      commentFileName,
+      studentId,
+    });
   };
 
   const confirmDelete = async () => {
-    if (deleteConfirmation.id) {
+    if (deleteConfirmation.type === 'homework') {
+      if (deleteConfirmation.id) {
+        try {
+          await api.delete(
+            `${import.meta.env.VITE_API_BASE_URL}/exam-submissions/${deleteConfirmation.id}`
+          );
+          setGradedHomeworks((prev) =>
+            prev.filter((hw) => hw.id !== deleteConfirmation.id)
+          );
+          setPendingHomeworks((prev) =>
+            prev.filter((hw) => hw.id !== deleteConfirmation.id)
+          );
+          window.alert('Homework submission deleted successfully.');
+        } catch (error) {
+          window.alert('There was an error deleting the homework submission.');
+        }
+      }
+    } else if (deleteConfirmation.type === 'commentFile') {
       try {
         await api.delete(
-          `${import.meta.env.VITE_API_BASE_URL}/api/homework-submission/delete`,
-          {
-            headers: { 'Content-Type': 'application/json' },
-            data: { submission_id: deleteConfirmation.id },
-          }
+          `/files/comment_file/${deleteConfirmation.commentFileName}/${deleteConfirmation.studentId}/${deleteConfirmation.id}`
         );
-        setGradedHomeworks((prev) =>
-          prev.filter((hw) => hw.id !== deleteConfirmation.id)
-        );
-        setPendingHomeworks((prev) =>
-          prev.filter((hw) => hw.id !== deleteConfirmation.id)
-        );
-        window.alert('Homework submission deleted successfully.');
+
+        if (activeTab === 'graded') {
+          fetchGradedHomework(gradedCurrentPage);
+        } else {
+          fetchPendingHomework(pendingCurrentPage);
+        }
+
+        alert('comment file delete successfully');
       } catch (error) {
-        console.error('Error deleting homework submission:', error);
-        window.alert('There was an error deleting the homework submission.');
-      } finally {
-        setDeleteConfirmation({ show: false, id: null });
+        if (axios.isAxiosError(error)) {
+          alert(error.response?.data.message);
+        } else {
+          alert('There was an error deleting comment file');
+        }
       }
+      // Delete comment file logic using deleteConfirmation.commentFileName, deleteConfirmation.studentId, and deleteConfirmation.id
+    }
+    cancelDelete();
+  };
+
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter') {
+      event.preventDefault(); // Prevent form from reloading (optional)
+      submitFilters();
     }
   };
 
   const cancelDelete = () => {
-    setDeleteConfirmation({ show: false, id: null });
+    setDeleteConfirmation({ show: false, id: null, type: 'homework' });
   };
 
   const handleFilterChange = (name: keyof Filters, value: string) => {
@@ -247,6 +271,7 @@ export default function GradeExam() {
       subject: '',
       grade: '',
     });
+    setSearchQuery('');
   };
 
   const submitFilters = () => {
@@ -260,35 +285,59 @@ export default function GradeExam() {
   const handleHomeworkClick = (homework: ExamSubmission) => {
     setSelectedHomework(homework);
     setComment(homework.comment || '');
-    setRawScore(homework.raw_score || 0);
-    setTotalScore(homework.total_score || 0);
-    calculateScore(homework.raw_score || 0, homework.total_score || 0);
+    setRawScore(homework.raw_score || '');
+    setTotalScore(homework.total_score || '');
+    calculateScore(homework.raw_score || '', homework.total_score || '');
   };
 
   const handleGradeSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
+    if (
+      rawScore === '' ||
+      totalScore === '' ||
+      isNaN(Number(rawScore)) ||
+      isNaN(Number(totalScore))
+    ) {
+      alert('Raw Score and Total Score must be valid numbers');
+      return;
+    }
+
+    const formData = new FormData();
+    if (teacherFile) {
+      formData.append('file', teacherFile);
+      setTeacherFile(null);
+    }
+
     try {
+      formData.append('rawScore', rawScore);
+      formData.append('totalScore', totalScore);
+      formData.append('calculatedScore', calculatedScore.toString());
+      formData.append('comment', comment);
+      formData.append(
+        'student_id',
+        selectedHomework?.student_id?.toString() ?? ''
+      );
+
+      console.log('FormData contents:');
+      for (const pair of formData.entries()) {
+        console.log(`${pair[0]}:`, pair[1]);
+      }
+
       const submitted_homework_id = selectedHomework?.id;
       const response = await api.put(
         `exam-submissions/${submitted_homework_id}`,
-        {
-          rawScore,
-          totalScore,
-          calculatedScore,
-          submitted_homework_id,
-          comment,
-        },
+        formData,
         {
           headers: {
-            'Content-Type': 'application/json',
+            'Content-Type': 'multipart/form-data',
           },
         }
       );
 
-      if (response.status !== 200) {
-        throw new Error('Failed to submit grade');
-      }
+      // if (response.status !== 200) {
+      //   throw new Error('Failed to submit grade');
+      // }
       setSelectedHomework(null);
 
       if (activeTab === 'graded') {
@@ -297,36 +346,115 @@ export default function GradeExam() {
         fetchPendingHomework(pendingCurrentPage);
       }
     } catch (error) {
-      console.error('Error:', error);
+      if (axios.isAxiosError(error)) {
+        console.log('inside axios isaxioserror');
+        console.log('error received', error.response);
+        alert(error.response?.data.message);
+      } else {
+        alert('There was an errrrrror grading exam');
+      }
     }
   };
 
   const handleRawScoreChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setRawScore(Number(e.target.value));
-    calculateScore(Number(e.target.value), totalScore);
+    setRawScore(e.target.value);
+    calculateScore(e.target.value, totalScore);
   };
 
   const handleTotalScoreChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setTotalScore(Number(e.target.value));
-    calculateScore(rawScore, Number(e.target.value));
+    setTotalScore(e.target.value);
+    calculateScore(rawScore, e.target.value);
   };
 
-  const calculateScore = (raw: number, total: number) => {
+  const calculateScore = (raw: string, total: string) => {
     if (raw && total) {
-      const percentage = (raw / total) * 100;
+      const percentage = (parseFloat(raw) / parseFloat(total)) * 100;
+      console.log('percentage', percentage);
       const score =
         gradeBoundaries.find(
           (boundary) => percentage >= boundary.min && percentage <= boundary.max
         )?.score || 0;
+      console.log('score', score);
       setCalculatedScore(score);
     } else {
       setCalculatedScore(0);
     }
   };
 
-  const handleFileClick = (filename: string, student_id: number) => {
-    const url = `${import.meta.env.VITE_API_BASE_URL}/files/${student_id}/${filename}`;
-    window.open(url, '_blank');
+  const handleFileClick = async (filename: string, student_id: number) => {
+    const url = `${import.meta.env.VITE_API_BASE_URL}/files/students/${student_id}/${filename}`;
+    window.open(url, '_blank'); // Open blank tab immediately to prevent pop-up blocking
+
+    // try {
+    //   const response = await api.get(url, { responseType: 'blob' }); // Fetch file as a Blob
+    //   const fileUrl = URL.createObjectURL(response.data); // Convert Blob to Object URL
+    //   newTab!.location.href = fileUrl; // Navigate new tab to file URL
+    // } catch (error) {
+    //   console.error('Error fetching file:', error);
+    //   newTab!.close(); // Close tab if error occurs
+    // }
+  };
+
+  // const handleDeleteCommentFile = async (
+  //   filename: string,
+  //   student_id: number,
+  //   selected_homework_id: number
+  // ) => {
+  //   try {
+  //     await api.delete(
+  //       `/files/comment_file/${filename}/${student_id}/${selected_homework_id}`
+  //     );
+
+  //     if (activeTab === 'graded') {
+  //       fetchGradedHomework(gradedCurrentPage);
+  //     } else {
+  //       fetchPendingHomework(pendingCurrentPage);
+  //     }
+
+  //     alert('comment file delete successfully');
+  //   } catch (error) {
+  //     if (axios.isAxiosError(error)) {
+  //       alert(error.response?.data.message);
+  //     } else {
+  //       alert('There was an error deleting comment file');
+  //     }
+  //   }
+  // };
+
+  const handleTeacherFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setTeacherFile(e.target.files[0]);
+    }
+  };
+
+  const handleTeacherFileUpload = async () => {
+    if (!teacherFile) return;
+
+    const formData = new FormData();
+    formData.append('file', teacherFile);
+
+    try {
+      const response = await api.post(
+        'http://your-server.com/upload',
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
+      console.log('Upload successful:', response.data);
+      // After successful upload, clear the selected file if needed
+      // setTeacherFile(null)
+    } catch (error) {
+      console.error('Error uploading file:', error);
+    }
+  };
+
+  const triggerFileInput = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
   };
 
   return (
@@ -373,7 +501,49 @@ export default function GradeExam() {
                                   }
                               }}
                             >
-                              <FileIcon className="w-4 h-4 mr-2" /> View File
+                              <FileIcon className="w-4 h-4" /> Student File
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="mr-2"
+                              disabled={!homework.comment_file_name}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (homework.comment_file_name)
+                                  if (homework.student_id !== undefined) {
+                                    handleFileClick(
+                                      homework.comment_file_name,
+                                      homework.student_id
+                                    );
+                                  }
+                              }}
+                            >
+                              <FileIcon className="w-4 h-4" />
+                              Comment File
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              className="mr-2"
+                              disabled={!homework.comment_file_name}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (homework.comment_file_name)
+                                  if (
+                                    homework.student_id !== undefined &&
+                                    homework.id !== undefined
+                                  ) {
+                                    handleDeleteCommentFile(
+                                      homework.comment_file_name,
+                                      homework.student_id,
+                                      homework.id
+                                    );
+                                  }
+                              }}
+                            >
+                              <TrashIcon className="w-4 h-4" />
+                              Remove Comment File
                             </Button>
                             <Button
                               variant="destructive"
@@ -587,6 +757,7 @@ export default function GradeExam() {
                   placeholder="Search..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={handleKeyDown}
                 />
                 <Select
                   onValueChange={(value) =>
@@ -598,7 +769,7 @@ export default function GradeExam() {
                     <SelectValue placeholder="Subject" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="All Subjects">All Subjects</SelectItem>
+                    <SelectItem value="all">All Subjects</SelectItem>
                     {subjects.map((subject) => (
                       <SelectItem key={subject} value={subject}>
                         {subject}
@@ -614,7 +785,7 @@ export default function GradeExam() {
                     <SelectValue placeholder="Grade" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="All Grades">All Grades</SelectItem>
+                    <SelectItem value="all">All Grades</SelectItem>
                     {grades.map((grade) => (
                       <SelectItem key={grade} value={grade}>
                         {grade}
@@ -653,28 +824,28 @@ export default function GradeExam() {
                     <div className="space-y-2">
                       <div className="flex justify-between">
                         <span className="font-semibold">
-                          <UserIcon className="inline mr-2" />
+                          <UserIcon className="inline mr-2 h-4 w-4" />
                           Student
                         </span>
                         <span>{selectedHomework.name}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="font-semibold">
-                          <BookmarkIcon className="inline mr-2" />
+                          <BookmarkIcon className="inline mr-2 h-4 w-4" />
                           Subject
                         </span>
                         <span>{selectedHomework.subject}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="font-semibold">
-                          <ArrowUpIcon className="inline mr-2" />
+                          <ArrowUpIcon className="inline mr-2 h-4 w-4" />
                           Grade
                         </span>
                         <span>{selectedHomework.grade}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="font-semibold">
-                          <ArrowUpIcon className="inline mr-2" />
+                          <ArrowUpIcon className="inline mr-2 h-4 w-4" />
                           Graded by
                         </span>
                         <span>{selectedHomework.graded_by}</span>
@@ -682,6 +853,7 @@ export default function GradeExam() {
                     </div>
                   </CardContent>
                 </Card>
+
                 <Card className="mt-4">
                   <CardContent className="flex justify-center items-center h-full p-3">
                     <Button
@@ -696,26 +868,28 @@ export default function GradeExam() {
                         )
                       }
                     >
-                      <FileIcon className="mr-2" /> View Submitted File
+                      <FileIcon className="mr-2 h-4 w-4" /> View Submitted File
                     </Button>
-                    {/* {selectedHomework.textAttachment && (
-                      <Card className="mt-4">
-                        <CardHeader>
-                          <CardTitle>
-                            <PaperclipIcon className="inline mr-2" />
-                            Text Attachment
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="max-h-40 overflow-y-auto">
-                            {selectedHomework.textAttachment}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    )} */}
                   </CardContent>
                 </Card>
+
+                {selectedHomework.text_attachment && (
+                  <Card className="mt-4">
+                    <CardHeader>
+                      <CardTitle>
+                        <PaperclipIcon className="inline mr-2 h-4 w-4" />
+                        Text Attachment
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="max-h-40 overflow-y-auto border rounded-md p-3 bg-muted/30">
+                        {selectedHomework.text_attachment}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
               </div>
+
               <div className="md:col-span-2">
                 <Card>
                   <CardHeader>
@@ -725,7 +899,7 @@ export default function GradeExam() {
                     <div className="space-y-4">
                       <div className="flex items-center space-x-2">
                         <Input
-                          type="number"
+                          type="text"
                           placeholder="Raw"
                           value={rawScore}
                           onChange={handleRawScoreChange}
@@ -733,7 +907,7 @@ export default function GradeExam() {
                         />
                         <span>/</span>
                         <Input
-                          type="number"
+                          type="text"
                           placeholder="Total"
                           value={totalScore}
                           onChange={handleTotalScoreChange}
@@ -747,6 +921,42 @@ export default function GradeExam() {
                         onChange={(e) => setComment(e.target.value)}
                         rows={10}
                       />
+
+                      <Card className="mt-4">
+                        <CardHeader>
+                          <CardTitle>
+                            <Upload className="inline mr-2 h-4 w-4" />
+                            Attach Commented File
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-3">
+                            <input
+                              type="file"
+                              ref={fileInputRef}
+                              onChange={handleTeacherFileChange}
+                              accept=".pdf"
+                              className="hidden"
+                            />
+                            <div className="flex items-center gap-2">
+                              <Button
+                                variant="outline"
+                                onClick={triggerFileInput}
+                                className="w-full"
+                              >
+                                {teacherFile
+                                  ? 'Change File'
+                                  : 'Select PDF File'}
+                              </Button>
+                            </div>
+                            {teacherFile && (
+                              <div className="text-sm mt-2 p-2 border rounded bg-muted/30">
+                                Selected file: {teacherFile.name}
+                              </div>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
                     </div>
                   </CardContent>
                 </Card>
@@ -765,9 +975,15 @@ export default function GradeExam() {
       <AlertDialog open={deleteConfirmation.show} onOpenChange={cancelDelete}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
+            <AlertDialogTitle>
+              {deleteConfirmation.type === 'homework'
+                ? 'Confirm Homework Deletion'
+                : 'Confirm Comment File Deletion'}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this homework assignment?
+              {deleteConfirmation.type === 'homework'
+                ? 'Are you sure you want to delete this homework assignment?'
+                : 'Are you sure you want to remove this comment file?'}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

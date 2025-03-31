@@ -11,6 +11,7 @@ from .files import files_ns
 from .comments import comments_ns
 from .teachers import teachers_ns
 from .reports import reports_ns
+from .settings import settings_ns
 
 api = Api(
     title="Sehan Mock Exam API",
@@ -32,3 +33,4 @@ api.add_namespace(files_ns, "/api/files")
 api.add_namespace(comments_ns, "/api/comments")
 api.add_namespace(teachers_ns, "/api/teachers")
 api.add_namespace(reports_ns, "/api/reports")
+api.add_namespace(settings_ns, "/api/settings")

@@ -1,6 +1,6 @@
 from flask_restx import Namespace, Resource
 from db import DBHelper
-from flask import send_file
+from flask import send_file, Response
 from reportlab.lib.pagesizes import letter, A4
 from reportlab.pdfgen import canvas
 from reportlab.pdfbase import pdfmetrics
@@ -28,6 +28,8 @@ from reportlab.lib import colors
 from reportlab.lib.colors import black, red
 import os
 from zipfile import ZipFile
+from io import BytesIO
+from time import sleep
 
 # import alimtalk send
 from utils.utils import send_mock_exam_report
@@ -224,20 +226,18 @@ class GenerateStudentReport(Resource):
 
         # Create a zip file containing all reports
         zip_path = os.path.join(REPORTS_DIR, "reports.zip")
+
+        if os.path.exists(zip_path):
+            os.remove(zip_path)
+
         with ZipFile(zip_path, "w") as zipf:
             for report in reports:
                 zipf.write(os.path.join(REPORTS_DIR, report), report)
 
-        response = send_file(
-            zip_path,
-            as_attachment=True,
-            download_name="reports.zip",
-            mimetype="application/zip",
-        )
-
-        os.remove(zip_path)
-
-        return response
+        return {
+            "message": "Report zip file created successfully",
+            "zip_path": zip_path,
+        }, 200
 
     def post(self):
         """Generate PDF reports."""
@@ -246,38 +246,54 @@ class GenerateStudentReport(Resource):
         # calculate average grades
         sql = """
             SELECT 
+                g.grade_name,
                 sub.subject_name,
-                AVG(es.score) as average_score,
-                AVG(es.total_score) as average_percentile
+                AVG(es.score) AS average_score,
+                AVG(es.total_score) AS average_percentile
             FROM exam_submissions es
             JOIN exams e ON es.exam_id = e.id
             JOIN subjects sub ON e.subject_id = sub.id
-            GROUP BY sub.id
+            JOIN students s ON es.student_id = s.id
+            JOIN grades g ON s.grade_id = g.id
+            GROUP BY g.id, sub.id
+            ORDER BY g.grade_name, sub.subject_name;
         """
 
         subject_average_results = db_helper.fetch_all(sql)
-        print(subject_average_results)
+        # print(subject_average_results)
 
         for student in students_list:
+            # db_helper.execute("SET SESSIONS group_concat_max_len = 1000000;")
+
             sql = """
                 SELECT 
                     s.id, 
                     s.name, 
                     s.phone_number,
                     s.school, 
-                    g.grade_name as grade,
-                    GROUP_CONCAT(sub.subject_name) as subjects,
-                    GROUP_CONCAT(sub.abbr_name) as abbr_subjects,
-                    GROUP_CONCAT(COALESCE(es.score, 0)) as student_grades,
-                    GROUP_CONCAT(COALESCE(es.total_score, 0)) as student_percentiles,
-                    GROUP_CONCAT(es.comment) as student_comments
+                    g.grade_name AS grade,
+                    GROUP_CONCAT(DISTINCT sub.subject_name ORDER BY sub.subject_name) AS subjects,
+                    GROUP_CONCAT(DISTINCT sub.abbr_name ORDER BY sub.abbr_name) AS abbr_subjects,
+                    GROUP_CONCAT(COALESCE(es.score, 0) ORDER BY sub.subject_name) AS student_grades,
+                    GROUP_CONCAT(COALESCE(es.total_score, 0) ORDER BY sub.subject_name) AS student_percentiles,
+                    GROUP_CONCAT(COALESCE(es.comment, '') ORDER BY sub.subject_name SEPARATOR ' @@ ') AS student_comments
                 FROM students s
                 JOIN grades g ON s.grade_id = g.id
                 JOIN student_subjects ss ON ss.student_id = s.id
                 JOIN subjects sub ON sub.id = ss.subject_id
-                LEFT JOIN exams e ON e.subject_id = sub.id
-                LEFT JOIN exam_submissions es ON es.student_id = s.id AND es.exam_id = e.id
+                LEFT JOIN (
+                    SELECT 
+                        e.subject_id, 
+                        es.student_id, 
+                        MAX(es.score) AS score, 
+                        MAX(es.total_score) AS total_score, 
+                        MAX(es.comment) AS comment
+                    FROM exams e
+                    LEFT JOIN exam_submissions es ON es.exam_id = e.id
+                    GROUP BY es.student_id, e.subject_id
+                ) es ON es.student_id = s.id AND es.subject_id = sub.id
                 WHERE s.id = %s
+                GROUP BY s.id;
             """
 
             result = db_helper.fetch_one(sql, (student["id"],))
@@ -301,36 +317,114 @@ class GenerateStudentReport(Resource):
                 if result["student_percentiles"]
                 else []
             )
-            student_comments = (
-                result["student_comments"].split(",")
-                if result["student_comments"]
-                else []
-            )
 
-            # Initialize empty lists for scores and percentiles
+            # if student_id == 25:
+            #     print(result["student_comments"])
+
+
+            # Fetch comments separately because group concat max len can't be changed in aws rds
+            sql = """
+            select coalesce(es.comment, '') as comment, sub.subject_name
+            from exam_submissions es
+            join exams e on es.exam_id = e.id
+            join subjects sub on e.subject_id = sub.id
+            where student_id = %s
+            order by sub.subject_name;
+            """
+            
+            result = db_helper.fetch_all(sql, (student["id"],))
+            
+            comment_dict = {row["subject_name"]: row["comment"] for row in result}
+            
+            student_comments = [comment_dict.get(subject, "") for subject in student_subjects]
+            
+            # student_comments = []
+            
+            # for row in result:
+            #     subject_name = row["subject_name"]
+            #     comment = row["comment"]
+                
+            #     if subject_name in 
+            #     student_comments.append(row["comment"])
+
+            # student_comments = (
+            #     result["student_comments"].split(" @@ ")
+            #     if result["student_comments"]
+            #     else []
+            # )
+
+            # Dictionary to store subject averages grouped by grade
+            subject_avg_dict = {}
+
+            for entry in subject_average_results:
+                grade = entry["grade_name"]
+                subject = entry["subject_name"]
+
+                if grade not in subject_avg_dict:
+                    subject_avg_dict[grade] = {}
+
+                subject_avg_dict[grade][subject] = {
+                    "average_score": round(float(entry["average_score"]), 2) if entry["average_score"] is not None else 0.00,
+                    "average_percentile": round(float(entry["average_percentile"]), 2) if entry["average_percentile"] is not None else 0.00,
+                }
+
+
+            # Initialize empty lists for student's average scores and percentiles
             average_grades = []
             average_percentiles = []
 
-            # Create a dictionary for quick lookup by subject_name
-            data_dict = {
-                entry["subject_name"]: entry for entry in subject_average_results
-            }
+            # Fetch the average scores for the student's grade
+            student_grade_averages = subject_avg_dict.get(student_grade, {})
+
+            # Iterate over the subjects and fetch corresponding values
+            for subject in student_subjects:
+                avg_entry = student_grade_averages.get(subject, {"average_score": 0.00, "average_percentile": 0.00})
+                
+                average_grades.append(avg_entry["average_score"])
+                average_percentiles.append(avg_entry["average_percentile"])
+
+
+            sql = """
+                SELECT notice_text from settings
+            """
+            
+            result = db_helper.fetch_one(sql)
+            #print("before notice text", result)
+            notice_text = result['notice_text']
+            
+            #print("I got notice text",notice_text)
+
+            # # Initialize empty lists for scores and percentiles
+            # average_grades = []
+            # average_percentiles = []
+
+            # # Create a dictionary for quick lookup by subject_name
+            # data_dict = {
+            #     entry["subject_name"]: entry for entry in subject_average_results
+            # }
 
             # Iterate over the subjects and fetch the corresponding values
-            for subject in student_subjects:
-                entry = data_dict.get(subject)
-                if entry:
-                    average_grades.append(float(entry["average_score"]))
-                    average_percentiles.append(float(entry["average_percentile"]))
-                else:
-                    # If no entry found for subject, append None or any default value
-                    average_grades.append(0)
-                    average_percentiles.append(0)
+            # for subject in student_subjects:
+            #     entry = data_dict.get(subject)
+            #     if (
+            #         entry
+            #         and entry["average_score"] != None
+            #         and entry["average_percentile"] != None
+            #     ):
+            #         average_grades.append(round(float(entry["average_score"]), 2))
+            #         average_percentiles.append(
+            #             round(float(entry["average_percentile"]), 2)
+            #         )
+            #     else:
+            #         # If no entry found for subject, append None or any default value
+            #         # ALSO IF GRADE NOT GIVEN AND IS NULL
+            #         average_grades.append(0.00)
+            #         average_percentiles.append(0.00)
 
             formatted_student_grades = [f"{grade}/7" for grade in student_grades]
             formatted_average_grades = [f"{grade}/7" for grade in average_grades]
 
-            self.generate_pdf(
+            student_report_file_name = self.generate_pdf(
                 student_id,
                 student_name,
                 student_grade,
@@ -344,11 +438,30 @@ class GenerateStudentReport(Resource):
                 student_percentiles,
                 average_percentiles,
                 student_comments,
+                notice_text
             )
 
-            # send alimtalk
-            send_mock_exam_report(student_name, phone_number)
+        # After generating all reports, make zip file
+        # Create a zip file containing all reports
+        zip_path = os.path.join(REPORTS_DIR, "reports.zip")
 
+        if os.path.exists(zip_path):
+            os.remove(zip_path)
+            sleep(0.5)
+            if os.path.exists(zip_path):  # Verify if it's gone
+                print("Error: reports.zip was not removed!")
+            else:
+                print("reports.zip successfully removed!")
+
+        # Get the list of all reports
+        # NEED TO GET IT AFTER DELETING ZIP FILE
+        # OTHERWISE ZIP FILE WILL BE INCLUDED IN REPORTS LIST
+        reports = os.listdir(REPORTS_DIR)
+
+        with ZipFile(zip_path, "w") as zipf:
+            for report in reports:
+                print("inside zipfile")
+                zipf.write(os.path.join(REPORTS_DIR, report), report)
         # scores = db_helper.fetch_all(
         #     "SELECT subject, score FROM exam_scores WHERE student_id = %s",
         #     (student_id,),
@@ -367,6 +480,8 @@ class GenerateStudentReport(Resource):
         #     (report_path, student_id),
         # )
 
+        print("generated reports")
+
         return {"message": "Report generated"}, 201
 
     def generate_pdf(
@@ -384,6 +499,7 @@ class GenerateStudentReport(Resource):
         student_percentiles,
         average_percentiles,
         student_comments,
+        notice_text
     ):
         """Generate and save a PDF report for a student."""
         pdf_filename = os.path.join(
@@ -408,7 +524,7 @@ class GenerateStudentReport(Resource):
             showBoundary=1,
         )
         doc_width, doc_height = A4  # Letter size: 8.5 x 11 inches
-        print("doc_width, doc_height", doc_width, doc_height)
+        # print("doc_width, doc_height", doc_width, doc_height)
         frame = Frame(0, 0, doc_width, doc_height, id="full_page")
 
         # Attach the PageTemplate
@@ -489,7 +605,7 @@ class GenerateStudentReport(Resource):
             ["Subject", ", ".join(student_subjects)],
         ]
 
-        col_ratio = [0.3, 0.7, 0.3, 1.2, 0.3, 0.7]
+        col_ratio = [0.3, 0.4, 0.3, 1.8, 0.3, 0.4]
         col_widths = [doc_width * ratio / sum(col_ratio) for ratio in col_ratio]
         student_info_table = Table(
             student_info_data, colWidths=col_widths, rowHeights=[30, 30]
@@ -554,7 +670,7 @@ class GenerateStudentReport(Resource):
             ["Score", "학생성적"] + [""] * (num_subjects - 1) + ["전체평균"],
             [""] + column_student_subjects + column_student_subjects,
             ["원 점수"] + formatted_student_grades + formatted_average_grades,
-            ["백분위"] + student_percentiles + average_percentiles,
+            ["백분율"] + student_percentiles + average_percentiles,
         ]
 
         # Dynamic column ratio (ensuring 2 sets of subjects + score column)
@@ -599,9 +715,9 @@ class GenerateStudentReport(Resource):
         # student_grades = [6, 7, 5, 4]  # Student scores
         # average_grades = [6.43, 6.5, 6.1, 5.8]  # Average scores
 
-        print("grades")
-        print(student_grades)
-        print(average_grades)
+        # print("grades")
+        # print(student_grades)
+        # print(average_grades)
 
         # Filter only numeric values
         filtered_student_grades = filter_numeric(student_grades)
@@ -631,7 +747,7 @@ class GenerateStudentReport(Resource):
 
         for subject in student_subjects:
             if subject != "-":
-                grade_boundaries += f"<b>{subject}</b> : <b>7</b>(100~91) / <b>6</b>(90~78) / <b>5</b>(77~65) / <b>4</b>(64~52) / <b>3</b>(51~41) / <b>2</b>(40~20) / <b>1</b>(1~19)<br/>"
+                grade_boundaries += f"<b>{subject}</b> : <b>7</b>(100~80) / <b>6</b>(79~70) / <b>5</b>(69~50) / <b>4</b>(49~40) / <b>3</b>(39~30) / <b>2</b>(29~20) / <b>1</b>(19~0)<br/>"
 
         grade_boundary_paragraph = Paragraph(grade_boundaries, text_style)
         elements.append(grade_boundary_paragraph)
@@ -677,7 +793,7 @@ class GenerateStudentReport(Resource):
         comment_text = ""
 
         for subject, comment in zip(student_subjects, student_comments):
-            comment_text += f"<b>{subject}</b> : {comment}<br /><br />"
+            comment_text += f"<b>{subject}</b> : {comment.replace('\n', '<br/>')}<br /><br />"
         elements.append(Paragraph(comment_text, comment_style))
         elements.append(Spacer(1, 40))
 
@@ -687,18 +803,27 @@ class GenerateStudentReport(Resource):
             parent=styles["Normal"],
             fontName="Pretendard-Regular",
             fontSize=12,
-            leading=16,
+            leading=20,
             leftIndent=40,
         )
-        notice_text = """
-        제 2회 세한아카데미 IB 학력평가 참석 감사드립니다. 아래 공지사항 참고 바랍니다.<br />
-        1. 본 학력평가는 학년 별 상위 9명에게 장학금을 수여합니다.<br />
-        2. 학력평가 학년별 상위 12명은 2025년 IB여름방학 Top Class 우선선발 대상자입니다.<br />
-        3. 과목별 해설 강의(공개강의)가 3월16일에 진행하니 시간표 참고하여 꼭 참석 바랍니다.<br />
-        4. 해설강의 이후, 3월 17일부터 1:1 학업성취도 상담이 진행됩니다.(무료)<br />
-        5. 상담시간은 평일 한국시간13시-17시이며, 예약을 희망하는 분들은 카카오톡"세한IB" 로 예약 부탁드립니다.<br />
-        * 장학금 및 TC 반대상자는3월21일 설명회 당일 공지 예정입니다.
-        """
+        # notice_text = """
+        # 제 2회 세한아카데미 IB 학력평가 참석 감사드립니다. 아래 공지사항 참고 바랍니다.<br />
+        # 1. 본 학력평가는 학년 별 상위 9명에게 장학금을 수여합니다.<br />
+        # 2. 학력평가 학년별 상위 12명은 2025년 IB여름방학 Top Class 우선선발 대상자입니다.<br />
+        # 3. 과목별 해설 강의(공개강의)가 3월 15일과 16일에 진행하니 시간표 참고하여 꼭 참석 바랍니다.<br />
+        # http://pf.kakao.com/_lqlBxd/108547617<br />
+        # 4. 3월 12일부터 IB팀장님과 학습상담을 무료로 진행합니다. 상담을 희망하시면 카카오톡 채널로 연락 바랍니다.(상담 시간은 평일 13:00~17:00시(한국시간)입니다.<br />
+        # 5. 6월 23일부터 진행하는 IB여름특강 3월 31일 까지 조기등록 진행하오니 많은 관심과 등록 부탁드립니다.<br />
+        # https://blog.naver.com/sehanibmt/223759582563<br />
+        # <br />
+        # * 장학금 및 TC 반대상자는3월25일 카카오톡으로 공지 예정입니다. 선발 대상자는 아래와 같은 방식으로 표기 합니다.<br />
+        # ex)김OO 아시아지역 국제학교 <br />
+        # ※학력평가 채점 자료와 피드백 내용은 3월 19일 모두 삭제 되므로 파일이 필요한 경우 개인이 다운로드 받아주시기 바랍니다.
+        # """
+        
+        notice_text = notice_text.replace('\n', '<br />')
+        # if student_id == 25:
+        #     print("notice text", notice_text.replace('\n', '<br />'))
         elements.append(Paragraph(notice_text, notice_style))
 
         # Create a frame that starts exactly at the top of the document
@@ -721,6 +846,24 @@ class GenerateStudentReport(Resource):
         )
 
         return pdf_filename
+
+
+@reports_ns.route("/send")
+class SendMockExamReport(Resource):
+    def post(self):
+        """Send mock exam report to students"""
+        students_list = db_helper.fetch_all(
+            "SELECT name, phone_number, report_path FROM students"
+        )
+
+        for student in students_list:
+            name = student["name"]
+            phone_number = student["phone_number"]
+            report_path = student["report_path"]
+            report_link = f"https://www.sehanibexam.com/api/files/{report_path}"
+
+            # send alimtalk
+            send_mock_exam_report(name, phone_number, report_link)
 
 
 @reports_ns.route("/<int:student_id>")

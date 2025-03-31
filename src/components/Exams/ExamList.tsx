@@ -7,28 +7,61 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { BookOpen, GraduationCap, Download, Upload } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { Separator } from '@/components/ui/separator';
+import {
+  BookOpen,
+  GraduationCap,
+  Download,
+  Upload,
+  LinkIcon,
+  FileText,
+} from 'lucide-react';
+import { Input } from '@/components/ui/input';
 import { components } from '@/types/api';
 import api from '@/apis/axiosInterceptor';
-
-// import '@/App.css';
+import axios, { isAxiosError } from 'axios';
 
 type Exam = components['schemas']['Exam'];
 type ExamSubmission = components['schemas']['ExamSubmission'];
 
 interface ExamListProps {
   initialExams: Exam[];
+  timeRemaining: number;
+  hoursBefore: number;
 }
 
-export default function ExamList({ initialExams }: ExamListProps) {
+export default function ExamList({
+  initialExams,
+  timeRemaining,
+  hoursBefore,
+}: ExamListProps) {
   const [exams, setExams] = useState<Exam[]>(initialExams);
+  // State for exam filters
   const [subjectFilter, setSubjectFilter] = useState<string>('all');
   const [gradeFilter, setGradeFilter] = useState<string>('all');
 
+  // Separate state for exam details and submission details.
+  const [selectedExam, setSelectedExam] = useState<Exam | null>(null);
+  const [selectedSubmission, setSelectedSubmission] =
+    useState<ExamSubmission | null>(null);
+
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [userComment, setUserComment] = useState('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
   const subjects = Array.from(
-    new Set(initialExams.map((Exam) => Exam.subject))
+    new Set(initialExams.map((exam) => exam.subject))
   );
-  const grades = Array.from(new Set(initialExams.map((Exam) => Exam.grade)));
+  const grades = Array.from(new Set(initialExams.map((exam) => exam.grade)));
 
   useEffect(() => {
     const filteredExams = initialExams.filter(
@@ -37,7 +70,7 @@ export default function ExamList({ initialExams }: ExamListProps) {
         (gradeFilter === 'all' || exam.grade === gradeFilter)
     );
     setExams(filteredExams);
-  }, [subjectFilter, gradeFilter]);
+  }, [subjectFilter, gradeFilter, initialExams]);
 
   const handleSubjectChange = (value: string) => {
     setSubjectFilter(value);
@@ -48,55 +81,104 @@ export default function ExamList({ initialExams }: ExamListProps) {
   };
 
   const handleDownload = async (file_name: string) => {
-    try {
-      const response = await api.get(`/files/${file_name}`, {
-        responseType: 'blob', // Ensures the response is treated as binary data (file)
-      });
+    const url = `${import.meta.env.VITE_API_BASE_URL}/files/exams/${file_name}`;
+    window.open(url, '_blank');
+  };
 
-      // Create a download link for the file
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', file_name); // Set the file name for downloading
-      document.body.appendChild(link);
-      link.click();
-      link.remove(); // Clean up the link element
+  const handleTeacherCommentDownload = async (file_name: string) => {
+    try {
+      if (!selectedSubmission) {
+        throw new Error('No submission selected');
+      }
+      const url = `${import.meta.env.VITE_API_BASE_URL}/files/students/${selectedSubmission.student_id}/${file_name}`;
+      window.open(url, '_blank');
+      // const response = await api.get(`/files/exams/${file_name}`, {
+      //   responseType: 'blob',
+      // });
+      // const url = window.URL.createObjectURL(new Blob([response.data]));
+      // const link = document.createElement('a');
+      // link.href = url;
+      // link.setAttribute('download', file_name);
+      // document.body.appendChild(link);
+      // link.click();
+      // link.remove();
     } catch (error) {
       console.error('Error downloading the file:', error);
     }
   };
 
-  const handleUpload = (examId: string) => {
-    const fileInput = document.createElement('input');
-    fileInput.type = 'file';
-    fileInput.accept = '.pdf'; // or any file format you expect
+  const handleSubmit = async () => {
+    try {
+      const formData = new FormData();
 
-    fileInput.onchange = async (e) => {
-      const target = e.target as HTMLInputElement;
-      if (target && target.files) {
-        const file = target.files[0];
-        if (file) {
-          try {
-            const formData = new FormData();
-            formData.append('exam_id', examId);
-            formData.append('file', file);
-
-            console.log('exma id', examId);
-
-            // Make the request to upload the file
-            await api.post<ExamSubmission>('/exam-submissions/', formData, {
-              headers: { 'Content-Type': 'multipart/form-data' },
-            });
-
-            alert('File uploaded successfully!');
-          } catch (error) {
-            console.error('Error uploading the file:', error);
-          }
-        }
+      if (selectedFile && selectedFile.type !== 'application/pdf') {
+        alert('Please submit only pdf files');
+        return;
       }
-    };
 
-    fileInput.click();
+      if (selectedFile) {
+        formData.append('file', selectedFile);
+      }
+      if (userComment) {
+        formData.append('text_attachment', userComment);
+      }
+      if (!selectedFile && !userComment) {
+        alert('Please upload a file or add a comment before submitting.');
+        return;
+      }
+
+      formData.append('exam_id', selectedExam?.id?.toString() || '');
+
+      await api.post<ExamSubmission>('/exam-submissions/', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+
+      setDialogOpen(false);
+      alert('Exam uploaded successfully!');
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        alert(error.response?.data.message);
+      } else {
+        alert('There was an error submitting exam');
+      }
+    }
+  };
+
+  // Fetch the submission details separately when opening the dialog.
+  const handleOpenDialog = async (exam: Exam) => {
+    setSelectedExam(exam);
+    setUserComment('');
+    setSelectedFile(null);
+    try {
+      const { data } = await api.get<ExamSubmission>(
+        `/exam-submissions/students/${exam.id}`
+      );
+      console.log('data exam submission', data);
+      setSelectedSubmission(data);
+      setUserComment(data.text_attachment || '');
+    } catch (error) {
+      console.error(
+        'No submission details found or error fetching them:',
+        error
+      );
+      setSelectedSubmission(null);
+    }
+    setDialogOpen(true);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setSelectedFile(e.target.files[0]);
+    }
+  };
+
+  const handleSubmitComment = async () => {
+    // Here you can merge the exam submission with new comment or file data.
+    // Use selectedExam?.id and selectedSubmission?.id (if available) to build the request.
+    console.log('Submitting comment:', userComment);
+    console.log('Submitting file:', selectedFile);
+    // For example, you might call an update API for exam submission.
+    setDialogOpen(false);
   };
 
   return (
@@ -149,42 +231,161 @@ export default function ExamList({ initialExams }: ExamListProps) {
                 <GraduationCap className="w-5 h-5 mr-2 text-indigo-500" />
                 Grade: {exam.grade}
               </div>
-              {/* <div className="flex items-center text-sm text-muted-foreground">
-                <Clock className="mr-2 h-4 w-4" />
-                <span>{exam.duration} minutes</span>
-              </div> */}
-              {/* <div className="flex items-center text-sm text-muted-foreground mt-2">
-                <FileText className="mr-2 h-4 w-4" />
-                <span>{exam.totalQuestions} questions</span>
-              </div> */}
+              {/* {selectedSubmission?.comment && (
+                <Badge
+                  variant="outline"
+                  className="bg-green-50 text-green-700 border-green-200 mt-2"
+                >
+                  Teacher feedback available
+                </Badge>
+              )} */}
             </CardContent>
-            <div className="px-6 py-4 bg-gray-100 flex justify-between space-x-4">
-              <button
-                onClick={() => exam.file_name && handleDownload(exam.file_name)}
-                className="flex items-center justify-center min-w-[120px] bg-blue-500 text-white font-bold py-2 px-4 rounded-full hover:bg-blue-600 transition duration-300"
+            <div className="px-6 py-4 bg-gray-100">
+              <Button
+                onClick={() => handleOpenDialog(exam)}
+                className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-2 px-4 rounded-full transition duration-300"
+                disabled={timeRemaining > hoursBefore * 60 * 60}
               >
-                <Download className="w-4 h-4 mr-2 flex-shrink-0" />
-                <span className="overflow-hidden whitespace-nowrap text-ellipsis">
-                  Download
-                </span>
-              </button>
-              <button
-                onClick={() =>
-                  exam.file_name &&
-                  exam.id !== undefined &&
-                  handleUpload(exam.id.toString())
-                }
-                className="flex items-center justify-center min-w-[120px] bg-green-500 text-white font-bold py-2 px-4 rounded-full hover:bg-green-600 transition duration-300"
-              >
-                <Upload className="w-4 h-4 mr-2 flex-shrink-0" />
-                <span className="overflow-hidden whitespace-nowrap text-ellipsis">
-                  Upload
-                </span>
-              </button>
+                View Exam Details
+              </Button>
             </div>
           </Card>
         ))}
       </div>
+
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="sm:max-w-[500px] max-h-[90vh] flex flex-col">
+          <DialogHeader className="flex-shrink-0">
+            <DialogTitle className="text-xl font-bold">
+              {selectedExam?.title}{' '}
+              {selectedSubmission?.id !== null && (
+                <span className="text-blue-600 dark:text-sky-400 text-base">
+                  (Submitted)
+                </span>
+              )}
+            </DialogTitle>
+            <DialogDescription>
+              {selectedExam?.subject} - Grade {selectedExam?.grade}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="overflow-y-auto flex-grow pr-2">
+            {selectedSubmission && (
+              <div className="bg-muted rounded-lg p-4 mt-2 mb-4">
+                <h3 className="font-medium text-center mb-2">Your Score</h3>
+                <div className="flex justify-center items-center gap-4">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-primary">
+                      {selectedSubmission.score}/7
+                    </div>
+                    <div className="text-sm text-muted-foreground">Grade</div>
+                  </div>
+                  {selectedSubmission.raw_score !== undefined && (
+                    <>
+                      <div className="text-muted-foreground">(</div>
+                      <div className="text-center">
+                        <div className="text-lg font-medium">
+                          {selectedSubmission.raw_score}/
+                          {selectedSubmission.raw_total_score}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          Raw Score
+                        </div>
+                      </div>
+                      <div className="text-muted-foreground">)</div>
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <div className="grid gap-4">
+              <div className="space-y-2">
+                <h3 className="font-medium">Exam Materials</h3>
+                <Button
+                  variant="outline"
+                  className="w-full flex items-center justify-center"
+                  onClick={() =>
+                    selectedExam?.file_name &&
+                    handleDownload(selectedExam.file_name)
+                  }
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Download Exam
+                </Button>
+              </div>
+
+              <Separator />
+
+              <div className="space-y-2">
+                <h3 className="font-medium">Submit Your Work</h3>
+                <div className="grid w-full max-w-sm items-center gap-1.5">
+                  <Input
+                    id="submission"
+                    type="file"
+                    onChange={handleFileChange}
+                  />
+                </div>
+              </div>
+
+              <Separator />
+
+              {(selectedSubmission?.comment ||
+                selectedSubmission?.comment_file_name) && (
+                <div className="space-y-2">
+                  <h3 className="font-medium">Teacher Feedback</h3>
+                  {selectedSubmission?.comment && (
+                    <div className="bg-muted p-3 rounded-md">
+                      <p className="text-sm" style={{ whiteSpace: 'pre-wrap' }}>
+                        {selectedSubmission.comment}
+                      </p>
+                    </div>
+                  )}
+
+                  {selectedSubmission?.comment_file_name && (
+                    <Button
+                      variant="outline"
+                      className="w-full flex items-center justify-center"
+                      onClick={() =>
+                        selectedSubmission.comment_file_name &&
+                        handleTeacherCommentDownload(
+                          selectedSubmission.comment_file_name
+                        )
+                      }
+                    >
+                      <FileText className="w-4 h-4 mr-2" />
+                      Download Teacher Comments
+                    </Button>
+                  )}
+                </div>
+              )}
+
+              <Separator />
+
+              <div className="space-y-2">
+                <h3 className="font-medium">Add Your Link</h3>
+                <Textarea
+                  placeholder="Add any google doc link if needed"
+                  value={userComment}
+                  onChange={(e) => setUserComment(e.target.value)}
+                  className="min-h-[100px]"
+                />
+              </div>
+
+              <Button
+                onClick={handleSubmit}
+                className="w-full"
+                disabled={
+                  timeRemaining === 0 || selectedSubmission?.id !== null
+                }
+                // disabled={timeRemaining === 0 || timeRemaining > 3 * 60 * 60}
+              >
+                Submit
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

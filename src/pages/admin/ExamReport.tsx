@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/button';
 import api from '@/apis/axiosInterceptor';
 
 export default function ReportButton() {
-  const handleCreateAndSend = async () => {
+  const handleCreate = async () => {
     try {
       await api.post('/reports');
       window.alert('Report generated!');
@@ -12,29 +12,40 @@ export default function ReportButton() {
     }
   };
 
-  const handleDownload = async () => {
+  const handleSend = async () => {
     try {
-      // Make a GET request to download the report
-      const response = await api.get('/reports', { responseType: 'blob' });
-
-      // Create a URL for the file
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-
-      // Create a temporary link element to trigger the download
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', 'reports.zip'); // Filename for the download
-      document.body.appendChild(link);
-      link.click(); // Trigger the click event to download the file
-
-      // Clean up
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-
-      window.alert('Report downloaded!');
+      await api.post('/reports/send');
+      window.alert('Report sent!');
     } catch (error) {
-      console.error('Error downloading reports:', error);
-      window.alert('There was an error downloading the reports.');
+      console.error('Error sending reports:', error);
+      window.alert('There was an error generating reports.');
+    }
+  };
+
+  const handleDownload = async () => {
+    const fileUrl = `${import.meta.env.VITE_API_BASE_URL}/files/reports/reports.zip`;
+
+    try {
+      const response = await fetch(fileUrl);
+      console.log('received response', response);
+
+      // Convert response to a blob
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+
+      // Create a temporary link element
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'reports.zip'; // Set the filename
+      document.body.appendChild(a);
+      a.click();
+
+      // Cleanup
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Download failed:', error);
+      alert('Failed to download the report.');
     }
   };
 
@@ -43,10 +54,17 @@ export default function ReportButton() {
       <h1 className="text-3xl font-bold mb-6 text-primary">Reports</h1>
       <div className="flex flex-col gap-4 w-full max-w-xs">
         <Button
-          onClick={handleCreateAndSend}
+          onClick={handleCreate}
           className="w-full transition-colors hover:bg-primary/90"
         >
-          Create and Send Reports
+          Create Reports
+        </Button>
+        <Button
+          onClick={handleSend}
+          variant="outline"
+          className="w-full transition-colors text-white bg-indigo-500 hover:bg-fuchsia-500 hover:text-white"
+        >
+          Send Reports
         </Button>
         <Button
           onClick={handleDownload}

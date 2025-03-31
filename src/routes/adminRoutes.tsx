@@ -12,6 +12,7 @@ const StudentComments = lazy(() => import('@/pages/admin/StudentComments'));
 const GradeExam = lazy(() => import('@/pages/admin/GradeExam'));
 const ExamReport = lazy(() => import('@/pages/admin/ExamReport'));
 const CreateTeacher = lazy(() => import('@/pages/admin/CreateTeacher'));
+const Settings = lazy(() => import('@/pages/admin/Settings'));
 
 const adminRoutes = [
   { path: 'exams/create', element: ExamSettingPage },
@@ -42,6 +43,10 @@ const adminRoutes = [
   {
     path: 'reports',
     element: ExamReport,
+  },
+  {
+    path: 'settings',
+    element: Settings,
   },
 ];
 

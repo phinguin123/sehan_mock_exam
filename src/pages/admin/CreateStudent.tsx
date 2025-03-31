@@ -31,6 +31,7 @@ import { toast, useToast } from '@/hooks/use-toast';
 import { Pencil, Trash2, Plus, Minus } from 'lucide-react';
 import api from '@/apis/axiosInterceptor';
 import { components } from '@/types/api';
+import axios, { isAxiosError } from 'axios';
 
 const grades = ['11', '12', 'pre-IB'];
 
@@ -179,8 +180,15 @@ export default function CreateStudent() {
       !newStudent.phone_number ||
       (newStudent.subjects || []).length === 0
     ) {
-      window.alert('All fields and at least one subject are required.');
+      alert('All fields and at least one subject are required.');
       return;
+    }
+
+    for (let subject of newStudent.subjects ?? []) {
+      if (!subject.subject_name.trim()) {
+        alert('Subject name cannot be empty');
+        return;
+      }
     }
 
     if (isEditing) {
@@ -195,11 +203,14 @@ export default function CreateStudent() {
     } else {
       try {
         await api.post('/students/', newStudent);
-        window.alert('New student added successfully.');
+        alert('New student added successfully.');
         fetchStudentList();
       } catch (error) {
-        console.error('Error saving student:', error);
-        window.alert('There was an error saving the student.');
+        if (axios.isAxiosError(error)) {
+          alert(error.response?.data.message);
+        } else {
+          alert('There was an errrrrror adding student');
+        }
       }
     }
 

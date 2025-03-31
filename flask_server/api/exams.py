@@ -8,6 +8,9 @@ from db import DBHelper
 from utils.utils import get_subject_id, get_grade_id
 from flask_jwt_extended import get_jwt_identity, jwt_required
 from flask import request
+from datetime import datetime
+import pytz
+from werkzeug.exceptions import BadRequest
 
 exams_ns = Namespace("exams", description="Exam-related operations")
 submissions_ns = Namespace("exam-submissions", description="Exam submission operations")
@@ -17,13 +20,13 @@ submit_exam_parser.add_argument(
     "exam_id", type=int, required=True, help="Exam ID is required"
 )
 submit_exam_parser.add_argument(
-    "student_id", type=int, required=False, help="Student ID is required"
+    "text_attachment", type=str, required=False, help="Student ID is required"
 )
 submit_exam_parser.add_argument(
     "file",
     type=FileStorage,
     location="files",
-    required=True,
+    required=False,
     help="Exam file is required",
 )
 
@@ -99,19 +102,25 @@ exam_submission_model = submissions_ns.model(
         ),
         # Grading Fields (only required for teacher grading)
         "score": fields.Integer(
-            description="Score awarded for the submission", required=False, example=85
+            description="Score out of 7", required=False, example=7
         ),
-        "total_score": fields.Integer(
-            description="Total score possible for the exam", required=False, example=100
+        "total_score": fields.String(
+            description="Raw total score for the exam", required=False, example=20
         ),
-        "raw_score": fields.Integer(
-            description="Raw score given (unadjusted)", required=False, example=88
+        "raw_score": fields.String(
+            description="Raw score given", required=False, example=15
         ),
         "raw_total_score": fields.Integer(
-            description="Raw total score possible (unadjusted)", required=False, example=100
+            description="Percentile out of 100", required=False, example=75
         ),
         "comment": fields.String(
             description="Feedback or comments from the teacher", required=False, example="Good work, but review section 3."
+        ),
+        "text_attachment": fields.String(
+            description="Text attachment for the submission", required=False, example="This is a text attachment"
+        ),
+        "comment_file_name": fields.String(
+            description="The file name of the uploaded comment file", example="uuid_comment_file.pdf", required=False
         ),
     },
 )
@@ -128,6 +137,33 @@ exams = [
 exam_submissions = []
 
 db_helper = DBHelper()
+
+
+def calculate_remaining_time():
+    # Define the target date and time (e.g., 2025-12-31 23:59:59)
+    seoul_tz = pytz.timezone("Asia/Seoul")
+    current_time = datetime.now(seoul_tz)
+    
+    
+    target_date = seoul_tz.localize(datetime(2025, 3, 11, 22, 0, 0))
+
+    # Fetch target_date from db
+    sql = """
+        SELECT exam_end_time FROM settings;
+    """
+    result = db_helper.fetch_one(sql)
+    
+    if not result:
+        return 0
+
+    # Calculate the difference in seconds
+    target_date = result["exam_end_time"].replace(tzinfo=seoul_tz)
+    remaining_time = round((target_date - current_time).total_seconds())
+
+    if remaining_time < 0:
+        remaining_time = 0
+
+    return remaining_time
 
 
 # temporary since admin login not made yet
@@ -177,8 +213,6 @@ class Exams(Resource):
         grade_name = args["grade"]
         file = args["file"]
 
-        print("received all args")
-
         # # Get subject_id from the database
         # subject_sql = "SELECT id FROM subjects WHERE subject_name = %s"
         # subject = db_helper.fetch_one(subject_sql, (subject_name,))
@@ -206,8 +240,14 @@ class Exams(Resource):
         # Handle exam file for upload
         if file:
             filename = secure_filename(file.filename)
-            unique_filename = f"{uuid.uuid4().hex}_{filename}"  # Append a unique ID
-            print(os.getcwd())
+
+            # Ensure the file extension is preserved correctly
+            base, ext = os.path.splitext(filename)
+            if not ext:  # In case the extension is missing
+                ext = ".pdf"  # Default to .pdf if missing
+
+            unique_filename = f"{uuid.uuid4().hex}_{base}{ext}"  # Append a unique ID
+
             if not os.path.exists("./uploads/exams"):
                 os.makedirs("./uploads/exams")
             file.save(os.path.join("./uploads/exams", unique_filename))
@@ -239,6 +279,71 @@ class Exam(Resource):
         if not exam:
             exams_ns.abort(404, "Exam not found")
         return exam, 200
+
+    @exams_ns.response(204, "Exam successfully deleted")
+    def delete(self, exam_id):
+        """Delete a specific exam"""
+        # Delete exam data from the database
+        sql = "DELETE FROM exams WHERE id = %s"
+        result = db_helper.execute(sql, (exam_id,))
+
+        print("result value ", result)
+        # # Check if any rows were deleted
+        # if result == 0:
+        #     students_ns.abort(404, "Student not found")
+
+        return None, 204
+
+    @jwt_required()
+    @exams_ns.expect(exam_model)
+    def put(self, exam_id):
+        """Edit a specific exam"""
+        args = create_exam_parser.parse_args()
+        # exam_id = args["id"]
+        title = args["title"]
+        subject_name = args["subject"]
+        grade_name = args["grade"]
+        file = args["file"]
+
+        print("inside put exam", exam_id, title, subject_name, grade_name, file)
+
+        # Get subject_id from the database using helper function
+        subject_id = get_subject_id(db_helper, subject_name)
+        if not subject_id:
+            return {"message": f"Subject '{subject_name}' not found"}, 400
+
+        # Get grade_id from the database using helper function
+        grade_id = get_grade_id(db_helper, grade_name)
+        if not grade_id:
+            return {"message": f"Grade '{grade_name}' not found"}, 400
+
+        print("before files")
+        # Handle exam file for upload
+        if file:
+            filename = secure_filename(file.filename)
+
+            # Ensure the file extension is preserved correctly
+            base, ext = os.path.splitext(filename)
+            if not ext:  # In case the extension is missing
+                ext = ".pdf"  # Default to .pdf if missing
+
+            unique_filename = f"{uuid.uuid4().hex}_{base}{ext}"  # Append a unique ID
+
+            if not os.path.exists("./uploads/exams"):
+                os.makedirs("./uploads/exams")
+            file.save(os.path.join("./uploads/exams", unique_filename))
+
+            sql = """
+                UPDATE exams 
+                set title = %s, subject_id = %s, grade_id = %s, file_name = %s
+                WHERE id = %s
+            """
+            db_helper.execute(
+                sql, (title, subject_id, grade_id, unique_filename, exam_id)
+            )
+
+            return {"message": "exam editied successfully"}, 201
+        return {"message": "No file provided"}, 400
 
 
 @exams_ns.route("/students")
@@ -287,11 +392,11 @@ class ExamSubmissions(Resource):
         offset = (page - 1) * itemsPerPage
 
         sql = """
-        SELECT s.name, e.title, g.grade_name as grade, sub.subject_name as subject, es.id, t.name as graded_by, es.exam_id, es.student_id, es.file_name,
+        SELECT s.name, e.title, g.grade_name as grade, sub.subject_name as subject, es.id, t.name as graded_by, es.exam_id, es.student_id, es.file_name, es.comment_file_name, es.text_attachment,
                 COALESCE(es.score, 0) AS score,
-                COALESCE(es.total_score, 0) AS total_score,
+                COALESCE(es.total_score, 0) AS raw_total_score,
                 COALESCE(es.raw_score, 0) AS raw_score,
-                COALESCE(es.raw_total_score, 0) AS raw_total_score,
+                COALESCE(es.raw_total_score, 0) AS total_score,
                 COALESCE(es.comment, '') AS comment
         FROM exam_submissions es
         LEFT JOIN exams e ON es.exam_id = e.id
@@ -314,12 +419,12 @@ class ExamSubmissions(Resource):
             )
 
         # Filter by subject
-        if subject:
+        if subject and subject != "all":
             sql += " AND LOWER(sub.subject_name) LIKE %s"
             params.append(f"%{subject}%")
 
         # Filter by grade
-        if grade:
+        if grade and grade != "all":
             sql += " AND g.grade_name = %s"
             params.append(grade)
 
@@ -339,7 +444,7 @@ class ExamSubmissions(Resource):
         sql += " LIMIT %s OFFSET %s"
         params.extend([itemsPerPage, offset])
 
-        print("final sql", sql)
+        print("params", params)
 
         # Execute the query with the parameters
         exam_submissions = db_helper.fetch_all(sql, params)
@@ -397,13 +502,34 @@ class ExamSubmissions(Resource):
 
     @jwt_required()
     @submissions_ns.expect(exam_submission_model)
-    @submissions_ns.marshal_with(exam_submission_model, code=201)
+    # @submissions_ns.marshal_with(exam_submission_model, code=201)
     def post(self):
         """Submit an exam (For Students)"""
         args = submit_exam_parser.parse_args()
         exam_id = args["exam_id"]
         student_id = get_jwt_identity()
         file = args["file"]
+        text_attachment = args["text_attachment"]
+
+        # first check if it is time to submit
+        remaining_time = calculate_remaining_time()
+
+        if remaining_time <= 0:
+            return {"message": "The exam submission period has ended."}, 400
+
+        # Check if the student already submitted the exam
+        sql = """
+            SELECT 1 FROM exam_submissions 
+            WHERE student_id = %s
+            AND exam_id = %s
+        """
+        existing_submission = db_helper.fetch_one(sql, (student_id, exam_id))
+        if existing_submission:
+            return {"message": "Already submitted"}, 400
+
+        # Initialize the SQL query and parameters
+        sql = "INSERT INTO exam_submissions (exam_id, student_id"
+        params = [exam_id, student_id]
 
         # Handle student submitted file for upload
         if file:
@@ -415,24 +541,50 @@ class ExamSubmissions(Resource):
                 os.makedirs(student_folder)
 
             filename = secure_filename(file.filename)
-            file_path = os.path.join(student_folder, filename)
+            
+            if filename == "pdf":
+                filename = f"{uuid.uuid4().hex}.pdf"
+            
+            # Ensure the file extension is preserved correctly
+            base, ext = os.path.splitext(filename)
+            if not ext:  # In case the extension is missing
+                ext = ".pdf"  # Default to .pdf if missing
 
+            unique_filename = f"{base}{ext}"  # Append a unique ID
+            file_path = os.path.join(student_folder, unique_filename)
             file.save(file_path)
 
-            # add record to exam_submissions table
-            sql = """
-            INSERT INTO exam_submissions (exam_id, student_id, file_name)
-            VALUES (%s, %s, %s)
-            """
+            # Add file_name to the SQL query and parameters
+            sql += ", file_name"
+            params.append(filename)
 
-            db_helper.execute(sql, (exam_id, student_id, filename))
+        # Handle text attachment
+        if text_attachment:
+            # Add text_attachment to the SQL query and parameters
+            sql += ", text_attachment"
+            params.append(text_attachment)
 
-            return {
-                "message": "File uploaded successfully",
-                "filename": filename,
-                "exam_id": exam_id,
-            }, 201
-        return {"message": "No file provided"}, 400
+        # Complete the SQL query
+        sql += ") VALUES (%s, %s"
+        if file:
+            sql += ", %s"
+        if text_attachment:
+            sql += ", %s"
+        sql += ")"
+
+        # Execute the SQL query
+        db_helper.execute(sql, tuple(params))
+
+        response = {
+            "message": "Submission uploaded successfully",
+            "exam_id": exam_id,
+        }
+        if file:
+            response["filename"] = filename
+        if text_attachment:
+            response["text_attachment"] = text_attachment
+
+        return response, 201
 
 
 @submissions_ns.route("/<int:submission_id>")
@@ -450,16 +602,56 @@ class ExamSubmission(Resource):
 
     @jwt_required()
     @submissions_ns.expect(exam_submission_model)
-    @submissions_ns.marshal_with(exam_submission_model)
+    # @submissions_ns.marshal_with(exam_submission_model)
     def put(self, submission_id):
         """Grade exam submission (For admins)"""
         teacher_id = get_jwt_identity()
-        graded_submission = submissions_ns.payload
+        # graded_submission = submissions_ns.payload
+        print("received payload for graded submission")
 
-        score = graded_submission["calculatedScore"]
-        raw_score = graded_submission["rawScore"]
-        raw_total_score = graded_submission["totalScore"]
-        comment = graded_submission["comment"]
+        score = request.form.get("calculatedScore")
+        raw_score = request.form.get("rawScore")
+        raw_total_score = request.form.get("totalScore")
+        comment = request.form.get("comment")
+        student_id = request.form.get("student_id")
+        file = request.files.get("file")
+
+        try:
+            raw_score = int(raw_score)
+            raw_total_score = int(raw_total_score)
+            score = int(score)
+        except ValueError:
+            raise BadRequest("Scores must be valid integers")
+
+        student_folder = os.path.join("./uploads/", str(student_id))
+
+
+        if not os.path.exists(student_folder):
+            os.makedirs(student_folder)
+            print("made directory")
+
+        # handle comment file for upload
+        if file:
+            filename = secure_filename(file.filename)
+
+            # Ensure the file extension is preserved correctly
+            base, ext = os.path.splitext(filename)
+            if not ext:  # In case the extension is missing
+                ext = ".pdf"  # Default to .pdf if missing
+
+            unique_filename = f"{uuid.uuid4().hex}_{base}{ext}"  # Append a unique ID
+            file_path = os.path.join(student_folder, unique_filename)
+
+            file.save(file_path)
+
+            # Update the submission record in the database for file upload
+            sql = """
+            UPDATE exam_submissions
+            SET comment_file_name = %s
+            WHERE id = %s
+            """
+
+            db_helper.execute(sql, (unique_filename, submission_id))
 
         total_score = int((raw_score / raw_total_score) * 100)
 
@@ -482,4 +674,73 @@ class ExamSubmission(Resource):
             ),
         )
 
-        return graded_submission, 200
+        print("score", score)
+
+        return {
+            "message": "Grade submitted successfully",
+            "submission_id": submission_id,
+            "score": score,
+            "total_score": total_score,
+            "raw_score": raw_score,
+            "comment": comment,
+            "comment_file_name": unique_filename if file else None,
+        }, 200
+
+    @jwt_required()
+    @submissions_ns.response(204, "Submitted exam successfully deleted")
+    def delete(self, submission_id):
+        """Delete a specific submission"""
+        # Delete exam data from the database
+        sql = "DELETE FROM exam_submissions WHERE id = %s"
+        result = db_helper.execute(sql, (submission_id,))
+
+        print("deleted value")
+        # # Check if any rows were deleted
+        # if result == 0:
+        #     students_ns.abort(404, "Student not found")
+
+        return None, 204
+
+
+@submissions_ns.route("/students/<int:exam_id>")
+@submissions_ns.response(404, "Submission not found")
+class ExamSubmission(Resource):
+    @jwt_required()
+    @submissions_ns.marshal_with(exam_submission_model)
+    def get(self, exam_id):
+        """Get details of a specific submitted exam (for students)"""
+        sql = """
+            SELECT 
+                id,
+                student_id,
+                score, 
+                total_score, 
+                raw_score, 
+                raw_total_score, 
+                comment,
+                text_attachment,
+                comment_file_name
+            FROM exam_submissions
+            WHERE exam_id = %s
+            AND student_id = %s
+        """
+        print("exam id and student id", exam_id, get_jwt_identity())
+        result = db_helper.fetch_one(sql, (exam_id, get_jwt_identity()))
+
+        return result, 200
+
+
+@exams_ns.route("/time_remaining")
+class Exams(Resource):
+    def get(self):
+        remaining_time = calculate_remaining_time()
+        
+        sql = """
+            SELECT hours_before from settings;
+        """
+        
+        result = db_helper.fetch_one(sql)
+        hours_before = result['hours_before']
+
+        # Return the remaining time in seconds
+        return {"remaining_time": remaining_time, "hours_before": hours_before}, 200

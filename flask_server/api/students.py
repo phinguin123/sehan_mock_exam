@@ -82,6 +82,7 @@ class Students(Resource):
         SELECT s.id, s.name, s.school, s.phone_number, s.email, g.grade_name as grade
         FROM students s
         JOIN grades g ON s.grade_id = g.id
+        ORDER BY s.name
         """
         students_data = db_helper.fetch_all(sql)
 
@@ -112,7 +113,7 @@ class Students(Resource):
         return formatted_students, 200
 
     @students_ns.expect(student_model)
-    @students_ns.marshal_with(student_model, code=201)
+    # @students_ns.marshal_with(student_model, code=201)
     def post(self):
         """Add a new student"""
         new_student = students_ns.payload
@@ -122,6 +123,17 @@ class Students(Resource):
         phone_number = new_student["phone_number"]
         grade_name = new_student["grade"]
         subjects = new_student["subjects"]  # List of subject names
+
+        sql = """
+            SELECT 1 FROM students 
+            WHERE 
+            email = %s OR
+            name = %s 
+        """
+        existing_student = db_helper.fetch_one(sql, (email, name))
+        if existing_student:
+            print("student already exists")
+            return {"message": "Email or name already exists"}, 400
 
         # Get grade_id from the database using helper function
         grade_id = get_grade_id(db_helper, grade_name)

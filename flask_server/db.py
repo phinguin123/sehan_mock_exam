@@ -40,6 +40,7 @@ class DBHelper:
         connection = self.get_connection()
         try:
             with connection.cursor() as cursor:
+                # cursor.execute("SET SESSION group_concat_max_len = 1000000;")
                 cursor.execute(query, params)
                 connection.commit()
                 return cursor.lastrowid

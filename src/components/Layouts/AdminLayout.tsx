@@ -6,14 +6,15 @@ import { AppSidebar } from '@/components/Layouts/app-sidebar';
 import SkipToMain from '@/components/Layouts/skip-to-main';
 import { Header } from '@/components/Layouts/header';
 import { TopNav } from '@/components/Layouts/top-nav';
+import LogoutButton from '@/components/LogoutButton';
 
 const topNav = [
-  {
-    title: 'Dashboard',
-    href: 'dashboard',
-    isActive: true,
-    disabled: false,
-  },
+  // {
+  //   title: 'Dashboard',
+  //   href: 'dashboard',
+  //   isActive: true,
+  //   disabled: false,
+  // },
   {
     title: 'Create',
     href: 'exams/create',
@@ -27,8 +28,8 @@ const topNav = [
     disabled: true,
   },
   {
-    title: 'Comment',
-    href: 'comments',
+    title: 'Report',
+    href: 'reports',
     isActive: false,
     disabled: true,
   },
@@ -55,7 +56,14 @@ const AdminLayout = () => {
           )}
         >
           <Header>
-            <TopNav links={topNav} />
+            <div className="flex justify-between w-full">
+              <TopNav links={topNav} />
+              <LogoutButton
+                variant="ghost"
+                size="sm"
+                className="text-gray-600 hover:text-red-500"
+              />
+            </div>
           </Header>
           <Outlet />
         </div>

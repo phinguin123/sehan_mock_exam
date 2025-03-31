@@ -50,11 +50,11 @@ export const sidebarData = {
     {
       title: 'General',
       items: [
-        {
-          title: 'Dashboard',
-          url: `${BASE_PATH}/`,
-          icon: IconLayoutDashboard,
-        },
+        // {
+        //   title: 'Dashboard',
+        //   url: `${BASE_PATH}/`,
+        //   icon: IconLayoutDashboard,
+        // },
         {
           title: 'Exams',
           icon: IconLockAccess,
@@ -105,6 +105,11 @@ export const sidebarData = {
           title: 'Teachers',
           icon: IconLockAccess,
           url: `${BASE_PATH}/teachers/create`,
+        },
+        {
+          title: 'Alimtalk',
+          icon: IconLockAccess,
+          url: `${BASE_PATH}/settings`,
         },
         // {
         //   title: 'Errors',

@@ -48,7 +48,14 @@ api.interceptors.response.use(
           // Retry the original request and await its response
           originalConfig.headers.Authorization = `Bearer ${newAccessToken}`;
 
-          return await api.request(originalConfig);
+          try {
+            // Retry the original request here
+            return await api.request(originalConfig);
+          } catch (retryError) {
+            // Handle errors during the retry but do NOT alert the user
+            console.error('Error during retried request:', retryError);
+            return Promise.reject(retryError); // You can choose whether to reject or return the response as needed
+          }
         } catch (refreshError) {
           if (axios.isAxiosError(refreshError) && refreshError.response) {
             if (refreshError.response?.status === 401) {
@@ -79,6 +86,9 @@ api.interceptors.response.use(
       console.log('error 422 should redirect to login page');
       window.location.href = '/login';
       console.log('finished moving to login with status 422');
+    } else if (status == 500) {
+      alert('An unexpected error occurred. Please try again later.');
+      window.location.href = '/500';
     }
 
     return Promise.reject(error);

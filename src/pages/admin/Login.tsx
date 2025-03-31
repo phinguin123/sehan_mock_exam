@@ -41,6 +41,11 @@ export default function Login() {
         throw new Error('Failed to Login');
       }
       console.log('submitted');
+
+      console.log('Login successful');
+
+      localStorage.setItem('access_token', response.data.access_token);
+      localStorage.setItem('refresh_token', response.data.refresh_token);
       navigate('/secure-sehan-admin/exams/grade'); // Redirect to a success page
     } catch (error) {
       console.error('Error loggin in:', error);
