@@ -36,3 +36,6 @@ flask_server/reports
 
 # Logs
 flask_server/logs
+
+# ignore all __pycache__
+**/__pycache__/
