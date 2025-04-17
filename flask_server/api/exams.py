@@ -11,6 +11,11 @@ from flask import request
 from datetime import datetime
 import pytz
 from werkzeug.exceptions import BadRequest
+import logging
+import utils.logging_config
+
+logger = logging.getLogger(__name__)
+logger.info("Another message from another file")
 
 exams_ns = Namespace("exams", description="Exam-related operations")
 submissions_ns = Namespace("exam-submissions", description="Exam submission operations")
@@ -143,8 +148,7 @@ def calculate_remaining_time():
     # Define the target date and time (e.g., 2025-12-31 23:59:59)
     seoul_tz = pytz.timezone("Asia/Seoul")
     current_time = datetime.now(seoul_tz)
-    
-    
+
     target_date = seoul_tz.localize(datetime(2025, 3, 11, 22, 0, 0))
 
     # Fetch target_date from db
@@ -152,13 +156,20 @@ def calculate_remaining_time():
         SELECT exam_end_time FROM settings;
     """
     result = db_helper.fetch_one(sql)
-    
+
     if not result:
         return 0
 
     # Calculate the difference in seconds
-    target_date = result["exam_end_time"].replace(tzinfo=seoul_tz)
+    target_date = seoul_tz.localize(result["exam_end_time"])
+    logger.info(f"target date:{target_date}")
+    log_message = f"target date and current date:{target_date},{current_time}"
+    logger.info(log_message)
+
     remaining_time = round((target_date - current_time).total_seconds())
+
+    log_message = f"the remaining time is : {remaining_time}"
+    logger.info(log_message)
 
     if remaining_time < 0:
         remaining_time = 0
@@ -541,10 +552,10 @@ class ExamSubmissions(Resource):
                 os.makedirs(student_folder)
 
             filename = secure_filename(file.filename)
-            
+
             if filename == "pdf":
                 filename = f"{uuid.uuid4().hex}.pdf"
-            
+
             # Ensure the file extension is preserved correctly
             base, ext = os.path.splitext(filename)
             if not ext:  # In case the extension is missing
@@ -624,7 +635,6 @@ class ExamSubmission(Resource):
             raise BadRequest("Scores must be valid integers")
 
         student_folder = os.path.join("./uploads/", str(student_id))
-
 
         if not os.path.exists(student_folder):
             os.makedirs(student_folder)
@@ -734,13 +744,13 @@ class ExamSubmission(Resource):
 class Exams(Resource):
     def get(self):
         remaining_time = calculate_remaining_time()
-        
+
         sql = """
             SELECT hours_before from settings;
         """
-        
+
         result = db_helper.fetch_one(sql)
-        hours_before = result['hours_before']
+        hours_before = result["hours_before"]
 
         # Return the remaining time in seconds
         return {"remaining_time": remaining_time, "hours_before": hours_before}, 200

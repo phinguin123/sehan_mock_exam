@@ -1,4 +1,4 @@
-from flask_restx import Namespace, Resource, fields, reqparse
+from flask_restx import Namespace, Resource, fields, reqparse, abort
 from db import DBHelper
 from .subjects import subject_model
 from utils.utils import get_grade_id, get_subject_id
@@ -34,7 +34,7 @@ student_model = students_ns.model(
             description="Grade of the student", required=True, example="pre-IB"
         ),
         "email": fields.String(
-            description="Email of the student", required=True, example="asdf@gmail.com"
+            description="Email of the student (must be unique)", required=True, example="asdf@gmail.com"
         ),
         "phone_number": fields.String(
             description="Kakaotalk phone number of the parent(with country code)",
@@ -122,23 +122,37 @@ class Students(Resource):
         email = new_student["email"]
         phone_number = new_student["phone_number"]
         grade_name = new_student["grade"]
-        subjects = new_student["subjects"]  # List of subject names
+        subjects = new_student["subjects"]  # Object type List of subject names
 
         sql = """
             SELECT 1 FROM students 
             WHERE 
-            email = %s OR
-            name = %s 
+            email = %s
         """
-        existing_student = db_helper.fetch_one(sql, (email, name))
-        if existing_student:
+        existing_email = db_helper.fetch_one(sql, (email))
+        if existing_email:
             print("student already exists")
+            return students_ns.abort(400, "Email already exists")
             return {"message": "Email or name already exists"}, 400
 
         # Get grade_id from the database using helper function
         grade_id = get_grade_id(db_helper, grade_name)
         if not grade_id:
+            return students_ns.abort(400, f"Grade '{grade_name}' not found")
             return {"message": f"Grade '{grade_name}' not found"}, 400
+
+        # Check if name already exists
+        sql = """
+            SELECT COUNT(*) FROM students
+            WHERE
+            name = %s
+        """
+        existing_name = db_helper.fetch_one(sql, (name))
+
+        # if name already exists, append a number to the name
+        # to make it unique
+        if existing_name["COUNT(*)"] > 0:
+            name = name + str(existing_name["COUNT(*)"] + 1)
 
         # Insert student data into the students table and get the student ID
         sql = "INSERT INTO students (name, school, email, phone_number, grade_id) VALUES (%s, %s, %s, %s, %s)"

@@ -30,7 +30,7 @@ class Subjects(Resource):
     def get(self):
         """Get list of all subjects"""
 
-        sql = "SELECT * FROM subjects"
+        sql = "SELECT * FROM subjects ORDER BY subject_name"
         subjects = db_helper.fetch_all(sql)
 
         return subjects, 200

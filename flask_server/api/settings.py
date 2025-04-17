@@ -5,6 +5,11 @@ from flask import request
 from datetime import datetime
 import shutil
 import os
+from pytz import timezone
+import logging
+import utils.logging_config
+
+logger = logging.getLogger(__name__)
 
 settings_ns = Namespace("settings", description="Utility-related operations")
 
@@ -37,13 +42,14 @@ class Settings(Resource):
             SELECT phone_number, email from students where id = %s
         """
         result = db_helper.fetch_one(sql, student_id)
-        
+
         phone_number = result["phone_number"]
         email = result["email"]
         send_alimtalk_student_credentials(phone_number, email)
 
         return {"message": "Alimtalk message sent successfully"}, 200
-    
+
+
 @settings_ns.route("/credentials")
 class SettingsCredentials(Resource):
     def post(self):
@@ -61,25 +67,26 @@ class SettingsCredentials(Resource):
 
         return {"message": "Alimtalk message sent successfully"}, 200
 
+
 @settings_ns.route("/report/notice_text")
 class SettingsReportNoticeText(Resource):
     def get(self):
         sql = """
             SELECT notice_text from settings
         """
-        
-        notice_text = db_helper.fetch_one(sql)['notice_text']
-        
-        return {'notice_text': notice_text}
-    
+
+        notice_text = db_helper.fetch_one(sql)["notice_text"]
+
+        return {"notice_text": notice_text}
+
     def post(self):
         """Set notice text at the end of report"""
         data = request.json
-    
+
         sql = """
             SELECT COUNT(*) FROM settings;
         """
-        
+
         result = db_helper.fetch_all(sql)
 
         # if data already exist, update
@@ -88,16 +95,16 @@ class SettingsReportNoticeText(Resource):
                 UPDATE settings SET notice_text = %s
             """
             db_helper.execute(sql, (data["reportNotice"]))
-            
+
             return {"message": "Successfully updated notice text"}, 201
         else:
             sql = """
                 INSERT INTO settings (notice_text) VALUES (%s)
             """
             db_helper.execute(sql, (data["reportNotice"]))
-            
+
             return {"message": "Successfully set notice text"}, 201
-        
+
 
 @settings_ns.route("/exam_end_time")
 class SettingsExamEndTIme(Resource):
@@ -106,67 +113,69 @@ class SettingsExamEndTIme(Resource):
         sql = """
             SELECT exam_end_time, hours_before from settings
         """
-        
+
         result = db_helper.fetch_one(sql)
-        hours_before = result['hours_before']
-        exam_end_time = result['exam_end_time']
-        
-        if exam_end_time == '0000-00-00 00:00:00':
+        hours_before = result["hours_before"]
+        exam_end_time = result["exam_end_time"]
+
+        if exam_end_time == "0000-00-00 00:00:00":
             return {"exam_end_time": None, "hours_before": hours_before}
-        
+
         print("result value", result)
-        
+
         formatted_exam_end_time = exam_end_time.strftime("%Y-%m-%dT%H:%M")
-        
+
         return {"exam_end_time": formatted_exam_end_time, "hours_before": hours_before}
-        
-    
+
     def post(self):
         """Set exam end time"""
         data = request.json
         hours_before = data["hoursBefore"]
+
         exam_end_time = datetime.strptime(data["examEndTime"], "%Y-%m-%dT%H:%M")
-        
+
         sql = """
             SELECT COUNT(*) FROM settings;
         """
-        
+
         result = db_helper.fetch_all(sql)
-        
+
         # if data already exist, update
         if result[0]["COUNT(*)"] == 1:
             sql = """
                 UPDATE settings SET exam_end_time = %s, hours_before = %s
             """
             db_helper.execute(sql, (exam_end_time, hours_before))
-            
+
             return {"message": "Successfully updated exam end time"}, 201
         else:
             sql = """
                 INSERT INTO settings (exam_end_time, hours_before) VALUES (%s, %s)
             """
             db_helper.execute(sql, (exam_end_time, hours_before))
-            
+
             return {"message": "Successfully set exam end time"}, 201
-        
-        
+
+
 @settings_ns.route("/reset")
 class SettingsResetServer(Resource):
     def delete_folder(folder_name):
-        folder_path = os.path.join("/home/ubuntu/sehan_mock_exam/flask_server", folder_name)
-        
+        folder_path = os.path.join(
+            "/home/ubuntu/sehan_mock_exam/flask_server", folder_name
+        )
+
         if os.path.exists(folder_path):
             try:
                 # Using shutil.rmtree to delete non-empty folders
                 shutil.rmtree(folder_path)
-                
+
                 os.makedirs(folder_path)
                 return True
             except Exception as e:
                 return False
         else:
             return False
-    
+
     def post(self):
         """Reset server. Delete students and all files"""
         sql = """
@@ -179,9 +188,9 @@ class SettingsResetServer(Resource):
 
             COMMIT;
         """
-        
+
         db_helper.execute(sql)
-        
+
         if self.delete_folder("uploads") and self.delete_folder("reports"):
             return {"message": "successfully delete everything~"}
         else:

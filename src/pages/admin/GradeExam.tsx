@@ -52,22 +52,25 @@ import axios, { isAxiosError } from 'axios';
 
 type ExamSubmission = components['schemas']['ExamSubmission'];
 
-const subjects = [
-  'Physics',
-  'English A',
-  'English B',
-  'Math AA',
-  'Math AI',
+type Subject = components['schemas']['Subject'];
+
+const old_subjects = [
+  'Biology',
+  'Business',
+  'Chemistry',
   'CompSci',
   'Economics',
-  'Business',
-  'Korean LL',
+  'English',
+  'English A',
+  'English B',
   'Korean Lit',
-  'Biology',
-  'Chemistry',
-  'Pre-Math',
-  'Pre-English',
+  'Korean LL',
+  'Math',
+  'Math AA',
+  'Math AI',
+  'Physics',
 ];
+
 const grades = ['pre-IB', '11', '12'];
 const levels = ['SL', 'HL', 'SL,HL'];
 const types = ['Homework', 'Exam'];
@@ -102,6 +105,7 @@ interface Filters {
 }
 
 export default function GradeExam() {
+  const [subjects, setSubjects] = useState<Subject[]>([]);
   const [pendingHomeworks, setPendingHomeworks] = useState<ExamSubmission[]>(
     []
   );
@@ -132,8 +136,25 @@ export default function GradeExam() {
   const [teacherFile, setTeacherFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const fetchSubjectList = async () => {
+    try {
+      const response = await api.get('/subjects/');
+      // const response = await axios.get(
+      //   `${import.meta.env.VITE_API_BASE_URL}/subjects/`,
+      //   {
+      //     headers: { 'Content-Type': 'application/json' },
+      //     withCredentials: true,
+      //   }
+      // );
+      console.log('received subject list response:', response);
+      setSubjects(response.data);
+    } catch (error) {
+      console.error('Error fetching subject list:', error);
+    }
+  };
+
   useEffect(() => {
-    console.log('hi');
+    fetchSubjectList();
   }, []);
 
   //   useEffect(() => {
@@ -634,9 +655,9 @@ export default function GradeExam() {
                             <Badge className="bg-yellow-500 text-white">
                               Grade: {homework.grade}
                             </Badge>
-                            <Badge className="bg-pink-500 text-white">
+                            {/* <Badge className="bg-pink-500 text-white">
                               Grade: {homework.graded_by}
-                            </Badge>
+                            </Badge> */}
                             {/* <Badge variant="secondary">
                             Level: {homework.levels.join(', ')}
                           </Badge>
@@ -770,9 +791,9 @@ export default function GradeExam() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Subjects</SelectItem>
-                    {subjects.map((subject) => (
-                      <SelectItem key={subject} value={subject}>
-                        {subject}
+                    {subjects.map((subj) => (
+                      <SelectItem key={subj.id} value={subj.subject_name}>
+                        {subj.subject_name}
                       </SelectItem>
                     ))}
                   </SelectContent>
