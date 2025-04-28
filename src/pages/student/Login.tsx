@@ -8,6 +8,7 @@ import api from '@/apis/axiosInterceptor';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import axios, { isAxiosError } from 'axios';
 
 interface LoginResponse {
   status: number;
@@ -51,7 +52,11 @@ export default function LoginPage() {
 
       navigate('/exams'); // Redirect to a success page
     } catch (error) {
-      console.error('Error logging in:', error);
+      if (axios.isAxiosError(error)) {
+        alert(error.response?.data.message);
+      } else {
+        alert('There was an errrrrror logging in');
+      }
     }
   };
 

@@ -22,11 +22,11 @@ api.interceptors.response.use(
     console.log('instance response error');
 
     const originalConfig = error.config; // 기존에 수행하려고 했던 작업
-    const msg = error.response?.data?.msg; // error msg from backend
+    const message = error.response?.data?.message; // error msg from backend
     const status = error.response?.status;
 
     if (status == 401) {
-      if (msg == 'Token has expired') {
+      if (message == 'Token has expired') {
         console.log('refreshing token...');
         try {
           // Wait for the token to be refreshed
@@ -67,19 +67,19 @@ api.interceptors.response.use(
             return Promise.reject(refreshError);
           }
         }
-      } else if (msg == 'Invalid username or password') {
+      } else if (message == 'Invalid username or password') {
         alert('Invalid username or password');
       } else {
-        console.log('error 401 with msg', msg);
+        console.log('error 401 with msg', message);
       }
     } else if (status == 404) {
-      if (msg == 'No current class found.') {
+      if (message == 'No current class found.') {
         alert('There is no class!');
       } else {
-        console.log('error 401 with msg', msg);
+        console.log('error 401 with msg', message);
       }
     } else if (status == 400 || status == 409) {
-      console.log(msg);
+      console.log(message);
       // console.log(msg)
     } else if (status == 422) {
       // when access token expires
@@ -87,8 +87,13 @@ api.interceptors.response.use(
       window.location.href = '/login';
       console.log('finished moving to login with status 422');
     } else if (status == 500) {
-      alert('An unexpected error occurred. Please try again later.');
-      window.location.href = '/500';
+      if (message) {
+        console.log('not alerting but just console logging error:', message);
+      } else {
+        alert('500 error occurred. Contact admin!!');
+      }
+      // redirect currently difficult... might lead to problem so temporarily comment out
+      // window.location.href = '/500';
     }
 
     return Promise.reject(error);

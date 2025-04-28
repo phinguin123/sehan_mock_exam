@@ -1,4 +1,4 @@
-from api.reports import generate_pdf  # Import your function
+from api.reports import GenerateStudentReport  # Import your function
 
 # Sample test data
 student_id = 1
@@ -44,12 +44,35 @@ student_comments = [
         열심히 합니다. 이번주에 배운 TARIFF 와 QUOTA 는 PAPER 2 에서 빈번히 나오는
         TOPICS 입니다. 개념도 개념이지만, 이 개념을 문제에 응용하는 연습을 지속적으로 해보면
         파이널 시험대비에 도움일 될 것 같습니다.
+        파이널 시험대비에 도움일 될 것 같습니다.
+        파이널 시험대비에 도움일 될 것 같습니다.
+        파이널 시험대비에 도움일 될 것 같습니다.
+        파이널 시험대비에 도움일 될 것 같습니다.
+        파이널 시험대비에 도움일 될 것 같습니다.
+        파이널 시험대비에 도움일 될 것 같습니다.
+        파이널 시험대비에 도움일 될 것 같습니다.
+        파이널 시험대비에 도움일 될 것 같습니다.
+        파이널 시험대비에 도움일 될 것 같습니다.
         """,
 ]
+notice_text = """
+제 2회 세한아카데미 IB 학력평가 참석 감사드립니다. 아래 공지사항 참고 바랍니다.
+1. 본 학력평가는 학년 별 상위 9명에게 장학금을 수여합니다.
+2. 학력평가 학년별 상위 12명은 2025년 IB여름방학 Top Class 우선선발 대상자입니다.
+3. 과목별 해설 강의(공개강의)가 3월 15일과 16일에 진행하니 시간표 참고하여 꼭 참석 바랍니다.
+http://pf.kakao.com/_lqlBxd/108547617
+4. 3월 12일부터 IB팀장님과 학습상담을 무료로 진행합니다. 상담을 희망하시면 카카오톡 채널로 연락 바랍니다.(상담 시간은 평일 13:00~17:00시(한국시간)입니다.
+5. 6월 23일부터 진행하는 IB여름특강 3월 31일 까지 조기등록 진행하오니 많은 관심과 등록 부탁드립니다. https://blog.naver.com/sehanibmt/223759582563
 
+* 장학금 및 TC 반대상자는3월25일 카카오톡으로 공지 예정입니다. 선발 대상자는 아래와 같은 방식으로 표기 합니다.
+ex)김OO 아시아지역 국제학교 
+
+※학력평가 채점 자료와 피드백 내용은 3월 19일 모두 삭제 되므로 파일이 필요한 경우 개인이 다운로드 받아주시기 바랍니다.. """
+
+test_report_generator = GenerateStudentReport()
 
 # Generate the PDF
-pdf_path = generate_pdf(
+pdf_path = test_report_generator.generate_pdf(
     student_id,
     student_name,
     student_grade,
@@ -63,5 +86,6 @@ pdf_path = generate_pdf(
     student_percentiles,
     average_percentiles,
     student_comments,
+    notice_text
 )
 print(f"PDF generated at: {pdf_path}")

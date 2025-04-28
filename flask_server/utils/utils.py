@@ -28,7 +28,9 @@ tas_id = "koysr20@gmail.com"
 auth_key = "OYSY1H-YL8B43-GU5DD5-P5JDOC_987"
 mock_exam_report_template_code = "C_YO_002_02_64740"
 alimtalk_check_template_code = "C_YO_002_02_64574"
-student_credentials_template_code = "C_YO_002_02_64766"
+student_credentials_template_code = (
+    "C_YO_002_02_66306"  # old template code "C_YO_002_02_64766"
+)
 
 # Send the POST request
 headers = {"Content-Type": "application/json"}
@@ -87,7 +89,7 @@ def send_alimtalk_check(user_phone_number):
         print("Error:", e)
 
 
-def send_alimtalk_student_credentials(user_phone_number, email):
+def send_alimtalk_student_credentials(user_phone_number, email, data):
     password = "2550"
     payload = {
         "tas_id": tas_id,
@@ -97,7 +99,7 @@ def send_alimtalk_student_credentials(user_phone_number, email):
             {
                 "user_name": "김지태",
                 "user_email": user_phone_number,  # Format: country code + phone number
-                "map_content": f"""안녕하세요. 3월 9일(일요일) IB 전세계모의고사를 위한 학생 로그인 정보를 알려드립니다.
+                "map_content": f"""안녕하세요. {data} 학생 로그인 정보를 알려드립니다.
 www.sehanibexam.com 에 접속하여
 아이디:{email}
 패스워드 : {password}

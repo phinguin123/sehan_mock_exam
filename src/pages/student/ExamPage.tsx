@@ -199,7 +199,7 @@ export default function ExamPage() {
                 <h3 className="text-lg font-semibold mb-2 text-gray-700">
                   Important Instructions
                 </h3>
-                <ul className="list-disc list-inside text-sm text-gray-600">
+                <ul className="list-disc list-inside text-sm font-semibold text-red-600">
                   <li>You can only submit the exam once</li>
                   <li>Exam will end when the time ends</li>
                   <li>Only submit pdf files</li>

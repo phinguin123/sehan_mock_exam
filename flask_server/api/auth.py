@@ -129,14 +129,14 @@ class AuthLogin(Resource):
         student = db_helper.fetch_one(student_sql, (email,))
 
         if not student:
-            return {"message": "Student Not Found"}, 404
+            return {"message": "invalid username"}, 404
 
         # default password is 2550
         default_password = bcrypt.hashpw("2550".encode("utf-8"), bcrypt.gensalt())
         if not bcrypt.checkpw(
             password.encode("utf-8"), default_password
         ):  # 비밀번호 일치 확인
-            return {"message": "Auth Failed"}, 500
+            return {"message": "Wrong password"}, 500
 
         additional_claims = {"role": "student"}
 
@@ -208,7 +208,7 @@ class AuthAdminLogin(Resource):
         teacher = db_helper.fetch_one(teachers_sql, (email,))
 
         if not teacher:
-            return {"message": "teacher Not Found"}, 404
+            return {"message": "invalid username"}, 404
 
         # Default password for admin, you can change this as needed
         admin_password = (
@@ -220,7 +220,7 @@ class AuthAdminLogin(Resource):
             password.encode("utf-8"),
             bcrypt.hashpw(admin_password.encode("utf-8"), bcrypt.gensalt()),
         ):
-            return {"message": "Auth Failed"}, 500
+            return {"message": "Wrong password"}, 500
 
         additional_claims = {"role": "teacher"}
 

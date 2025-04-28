@@ -85,12 +85,18 @@ export default function ExamList({
     window.open(url, '_blank');
   };
 
+  const handleViewSubmission = async (file_name: string) => {
+    try {
+      const url = `${import.meta.env.VITE_API_BASE_URL}/files/students/${selectedSubmission?.student_id}/${file_name}`;
+      window.open(url, '_blank');
+    } catch (error) {
+      console.error('Error downloading the file:', error);
+    }
+  };
+
   const handleTeacherCommentDownload = async (file_name: string) => {
     try {
-      if (!selectedSubmission) {
-        throw new Error('No submission selected');
-      }
-      const url = `${import.meta.env.VITE_API_BASE_URL}/files/students/${selectedSubmission.student_id}/${file_name}`;
+      const url = `${import.meta.env.VITE_API_BASE_URL}/files/students/${selectedSubmission?.student_id}/${file_name}`;
       window.open(url, '_blank');
       // const response = await api.get(`/files/exams/${file_name}`, {
       //   responseType: 'blob',
@@ -326,6 +332,20 @@ export default function ExamList({
                     onChange={handleFileChange}
                   />
                 </div>
+
+                {selectedSubmission?.file_name && (
+                  <Button
+                    variant="outline"
+                    className="w-full flex items-center justify-center mt-2"
+                    onClick={() =>
+                      selectedSubmission?.file_name &&
+                      handleViewSubmission(selectedSubmission.file_name)
+                    }
+                  >
+                    <FileText className="w-4 h-4 mr-2" />
+                    View Submitted File
+                  </Button>
+                )}
               </div>
 
               <Separator />

@@ -561,13 +561,13 @@ class ExamSubmissions(Resource):
             if not ext:  # In case the extension is missing
                 ext = ".pdf"  # Default to .pdf if missing
 
-            unique_filename = f"{base}{ext}"  # Append a unique ID
+            unique_filename = f"{uuid.uuid4().hex}_{base}{ext}"  # Append a unique ID
             file_path = os.path.join(student_folder, unique_filename)
             file.save(file_path)
 
             # Add file_name to the SQL query and parameters
             sql += ", file_name"
-            params.append(filename)
+            params.append(unique_filename)
 
         # Handle text attachment
         if text_attachment:
@@ -729,7 +729,8 @@ class ExamSubmission(Resource):
                 raw_total_score, 
                 comment,
                 text_attachment,
-                comment_file_name
+                comment_file_name,
+                file_name
             FROM exam_submissions
             WHERE exam_id = %s
             AND student_id = %s

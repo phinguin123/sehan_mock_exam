@@ -321,7 +321,6 @@ class GenerateStudentReport(Resource):
             # if student_id == 25:
             #     print(result["student_comments"])
 
-
             # Fetch comments separately because group concat max len can't be changed in aws rds
             sql = """
             select coalesce(es.comment, '') as comment, sub.subject_name
@@ -331,20 +330,22 @@ class GenerateStudentReport(Resource):
             where student_id = %s
             order by sub.subject_name;
             """
-            
+
             result = db_helper.fetch_all(sql, (student["id"],))
-            
+
             comment_dict = {row["subject_name"]: row["comment"] for row in result}
-            
-            student_comments = [comment_dict.get(subject, "") for subject in student_subjects]
-            
+
+            student_comments = [
+                comment_dict.get(subject, "") for subject in student_subjects
+            ]
+
             # student_comments = []
-            
+
             # for row in result:
             #     subject_name = row["subject_name"]
             #     comment = row["comment"]
-                
-            #     if subject_name in 
+
+            #     if subject_name in
             #     student_comments.append(row["comment"])
 
             # student_comments = (
@@ -364,10 +365,17 @@ class GenerateStudentReport(Resource):
                     subject_avg_dict[grade] = {}
 
                 subject_avg_dict[grade][subject] = {
-                    "average_score": round(float(entry["average_score"]), 2) if entry["average_score"] is not None else 0.00,
-                    "average_percentile": round(float(entry["average_percentile"]), 2) if entry["average_percentile"] is not None else 0.00,
+                    "average_score": (
+                        round(float(entry["average_score"]), 2)
+                        if entry["average_score"] is not None
+                        else 0.00
+                    ),
+                    "average_percentile": (
+                        round(float(entry["average_percentile"]), 2)
+                        if entry["average_percentile"] is not None
+                        else 0.00
+                    ),
                 }
-
 
             # Initialize empty lists for student's average scores and percentiles
             average_grades = []
@@ -378,21 +386,22 @@ class GenerateStudentReport(Resource):
 
             # Iterate over the subjects and fetch corresponding values
             for subject in student_subjects:
-                avg_entry = student_grade_averages.get(subject, {"average_score": 0.00, "average_percentile": 0.00})
-                
+                avg_entry = student_grade_averages.get(
+                    subject, {"average_score": 0.00, "average_percentile": 0.00}
+                )
+
                 average_grades.append(avg_entry["average_score"])
                 average_percentiles.append(avg_entry["average_percentile"])
-
 
             sql = """
                 SELECT notice_text from settings
             """
-            
+
             result = db_helper.fetch_one(sql)
-            #print("before notice text", result)
-            notice_text = result['notice_text']
-            
-            #print("I got notice text",notice_text)
+            # print("before notice text", result)
+            notice_text = result["notice_text"]
+
+            # print("I got notice text",notice_text)
 
             # # Initialize empty lists for scores and percentiles
             # average_grades = []
@@ -438,7 +447,7 @@ class GenerateStudentReport(Resource):
                 student_percentiles,
                 average_percentiles,
                 student_comments,
-                notice_text
+                notice_text,
             )
 
         # After generating all reports, make zip file
@@ -499,7 +508,7 @@ class GenerateStudentReport(Resource):
         student_percentiles,
         average_percentiles,
         student_comments,
-        notice_text
+        notice_text,
     ):
         """Generate and save a PDF report for a student."""
         pdf_filename = os.path.join(
@@ -568,18 +577,22 @@ class GenerateStudentReport(Resource):
         date_text = Paragraph("2025.05", date_style)
 
         # Component 3: title
-        title_text = "SEHAN ACADEMY IB<br/>제 2회 전 세계 모의고사"
+        title_text = "SEHAN ACADEMY IB<br/>전세계 모의고사"
         title_paragraph = Paragraph(title_text, title_style)
 
         # Create the title table with the Paragraph as content
         title_data = [
-            [sehan_logo, title_paragraph, date_text]
+            [sehan_logo], [title_paragraph]  # , date_text
         ]  # Place the Paragraph inside the table cell
 
         # Define table with necessary styles
         title_table = Table(
-            title_data, colWidths=[60, doc_width - 120, 70], rowHeights=[70]
+            title_data, colWidths=[doc_width], rowHeights=[35, 35]
         )
+        # if date_text exists
+        # title_table = Table(
+        #     title_data, colWidths=[60, doc_width - 120, 70], rowHeights=[70]
+        # )
         title_table.setStyle(
             TableStyle(
                 [
@@ -793,7 +806,9 @@ class GenerateStudentReport(Resource):
         comment_text = ""
 
         for subject, comment in zip(student_subjects, student_comments):
-            comment_text += f"<b>{subject}</b> : {comment.replace('\n', '<br/>')}<br /><br />"
+            comment_text += (
+                f"<b>{subject}</b> : {comment.replace('\n', '<br/>')}<br /><br />"
+            )
         elements.append(Paragraph(comment_text, comment_style))
         elements.append(Spacer(1, 40))
 
@@ -805,6 +820,7 @@ class GenerateStudentReport(Resource):
             fontSize=12,
             leading=20,
             leftIndent=40,
+            rightIndent=40,
         )
         # notice_text = """
         # 제 2회 세한아카데미 IB 학력평가 참석 감사드립니다. 아래 공지사항 참고 바랍니다.<br />
@@ -820,8 +836,8 @@ class GenerateStudentReport(Resource):
         # ex)김OO 아시아지역 국제학교 <br />
         # ※학력평가 채점 자료와 피드백 내용은 3월 19일 모두 삭제 되므로 파일이 필요한 경우 개인이 다운로드 받아주시기 바랍니다.
         # """
-        
-        notice_text = notice_text.replace('\n', '<br />')
+
+        notice_text = notice_text.replace("\n", "<br />")
         # if student_id == 25:
         #     print("notice text", notice_text.replace('\n', '<br />'))
         elements.append(Paragraph(notice_text, notice_style))

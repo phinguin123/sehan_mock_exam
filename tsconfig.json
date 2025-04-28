@@ -9,5 +9,7 @@
     "paths": {
       "@/*": ["./src/*"]
     }
-  }
+  },
+  "exclude": ["node_modules", "dist"] // this is required to prevent cpu 100%
+  //"include": ["src"]
 }

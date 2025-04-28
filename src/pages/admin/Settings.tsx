@@ -12,12 +12,32 @@ import {
   CardFooter,
 } from '@/components/ui/card';
 import { RefreshCw, AlertTriangle } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+
+interface Confirmation {
+  show: boolean;
+  type: 'credentialsAll' | 'credentialsOne' | 'resetServer';
+}
 
 export default function Settings() {
   const [studentId, setStudentId] = useState('');
   const [examEndTime, setExamEndTime] = useState('');
   const [hoursBefore, setHoursBefore] = useState('');
   const [reportNotice, setReportNotice] = useState('');
+  const [credentialsNotice, setCredentialsNotice] = useState('');
+  const [confirmation, setConfirmation] = useState<Confirmation>({
+    show: false,
+    type: 'credentialsAll',
+  });
 
   useEffect(() => {
     const fetchExamEndTime = async () => {
@@ -36,17 +56,42 @@ export default function Settings() {
         const result = await api.get('/settings/report/notice_text');
         setReportNotice(result.data?.notice_text);
       } catch (error) {
-        console.log('error fetching exam end time');
+        console.log('error fetching notice text');
+      }
+    };
+
+    const fetchCredentialsNoticeText = async () => {
+      try {
+        const result = await api.get('/settings/credentials');
+        setCredentialsNotice(result.data?.credentials_notice_text);
+      } catch (error) {
+        console.log('error fetching credentials notice text');
       }
     };
 
     fetchExamEndTime();
     fetchNoticeText();
+    fetchCredentialsNoticeText();
   }, []);
+
+  const confirmOkay = async () => {
+    setConfirmation({ show: false, type: 'credentialsAll' });
+    if (confirmation.type === 'credentialsAll') {
+      await handleSendCredentials();
+      return;
+    } else if (confirmation.type === 'credentialsOne') {
+      await handleSendOne();
+      return;
+    } else if (confirmation.type === 'resetServer') {
+      await handleResetServer();
+      return;
+    }
+    return;
+  };
 
   const handleSendCredentials = async () => {
     try {
-      await api.post('/settings/credentials');
+      await api.post('/settings/credentials', { credentialsNotice });
       window.alert('Student credentials message sent');
     } catch (error) {
       console.error('Error sending message', error);
@@ -125,6 +170,10 @@ export default function Settings() {
     }
   };
 
+  const cancelConfirmation = () => {
+    setConfirmation({ show: false, type: 'credentialsAll' });
+  };
+
   return (
     <div className="flex flex-col items-center justify-center bg-background p-8 rounded-lg shadow-md">
       <div className="w-full max-w-md">
@@ -182,12 +231,24 @@ export default function Settings() {
               Set Notice Text
             </Button>
           </div>
-          <Button
-            onClick={handleSendCredentials}
-            className="w-full transition-colors hover:bg-primary/90"
-          >
-            Send Credentials
-          </Button>
+          <div className="space-y-2">
+            <Label htmlFor="credentials">Credentials Notice Text</Label>
+            <Textarea
+              id="credentials"
+              placeholder="Enter credentials notice..."
+              value={credentialsNotice}
+              onChange={(e) => setCredentialsNotice(e.target.value)}
+              className="w-full min-h-[100px]"
+            />
+            <Button
+              onClick={() =>
+                setConfirmation({ show: true, type: 'credentialsAll' })
+              }
+              className="w-full transition-colors hover:bg-primary/90"
+            >
+              Send Credentials
+            </Button>
+          </div>
           {/* <Button
           onClick={handleSendAll}
           className="w-full transition-colors hover:bg-primary/90"
@@ -203,7 +264,9 @@ export default function Settings() {
               className="flex-grow"
             />
             <Button
-              onClick={handleSendOne}
+              onClick={() =>
+                setConfirmation({ show: true, type: 'credentialsOne' })
+              }
               className="transition-colors hover:bg-primary/90"
             >
               Credentials Check
@@ -237,6 +300,23 @@ export default function Settings() {
           </div>
         </div>
       </div>
+
+      <AlertDialog open={confirmation.show} onOpenChange={cancelConfirmation}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{'Confirmation'}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {'Send credentials?'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={cancelConfirmation}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={confirmOkay}>Okay</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

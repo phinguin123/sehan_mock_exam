@@ -55,6 +55,9 @@ def test_auto_import_students(name, school, email, phone_number, grade_name, sub
         subject_id = get_subject_id(db_helper, subject_name)
         if not subject_id:
             print(f"Subject '{subject_name}' not found")
+            print(f"Nmae: {name}")
+            sql = "DELETE FROM students WHERE id = %s"
+            db_helper.execute(sql, (student_id))
             return
 
         sql_insert_student_subject = (

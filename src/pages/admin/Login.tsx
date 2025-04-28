@@ -14,6 +14,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { LockIcon } from 'lucide-react';
 import api from '@/apis/axiosInterceptor';
 import { useNavigate } from 'react-router-dom';
+import axios, { isAxiosError } from 'axios';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -48,7 +49,11 @@ export default function Login() {
       localStorage.setItem('refresh_token', response.data.refresh_token);
       navigate('/secure-sehan-admin/exams/grade'); // Redirect to a success page
     } catch (error) {
-      console.error('Error loggin in:', error);
+      if (axios.isAxiosError(error)) {
+        alert(error.response?.data.message);
+      } else {
+        alert('There was an errrrrror logging in');
+      }
     }
   };
 

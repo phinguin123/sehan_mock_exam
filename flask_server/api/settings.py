@@ -43,17 +43,51 @@ class Settings(Resource):
         """
         result = db_helper.fetch_one(sql, student_id)
 
+        sql = """
+            SELECT credentials_notice_text from settings
+        """
+        credentials_notice_text = db_helper.fetch_one(sql)["credentials_notice_text"]
+
         phone_number = result["phone_number"]
         email = result["email"]
-        send_alimtalk_student_credentials(phone_number, email)
+        send_alimtalk_student_credentials(phone_number, email, credentials_notice_text)
 
         return {"message": "Alimtalk message sent successfully"}, 200
 
 
 @settings_ns.route("/credentials")
 class SettingsCredentials(Resource):
+
+    def get(self):
+        sql = """
+            SELECT credentials_notice_text from settings
+        """
+
+        credentials_notice_text = db_helper.fetch_one(sql)["credentials_notice_text"]
+
+        return {"credentials_notice_text": credentials_notice_text}
+
     def post(self):
         """Send student id and password (for all students)"""
+        data = request.json.get("credentialsNotice")
+
+        sql = """
+            SELECT COUNT(*) FROM settings;
+        """
+
+        result = db_helper.fetch_all(sql)
+
+        # if data already exist, update
+        if result[0]["COUNT(*)"] == 1:
+            sql = """
+                UPDATE settings SET credentials_notice_text = %s
+            """
+            db_helper.execute(sql, (data))
+        else:
+            sql = """
+                INSERT INTO settings (credentials_notice_text) VALUES (%s)
+            """
+            db_helper.execute(sql, (data))
 
         sql = """
             SELECT phone_number, email from students
@@ -63,7 +97,7 @@ class SettingsCredentials(Resource):
         for row in results:
             phone_number = row["phone_number"]
             email = row["email"]
-            send_alimtalk_student_credentials(phone_number, email)
+            send_alimtalk_student_credentials(phone_number, email, data)
 
         return {"message": "Alimtalk message sent successfully"}, 200
 

@@ -8,17 +8,13 @@ from werkzeug.exceptions import BadRequest, HTTPException, BadRequestKeyError
 from jwt.exceptions import ExpiredSignatureError
 
 
-logging.basicConfig(
-    filename = "logs/server.log", 
-    level = logging.DEBUG, 
-    filemode= "a"
-)
+logging.basicConfig(filename="logs/server.log", level=logging.DEBUG, filemode="a")
 
 app = Flask(__name__)
 app.config["JWT_SECRET_KEY"] = "sehan_secret_key123"
 app.config["MAX_CONTENT_LENGTH"] = 100 * 1024 * 1024  # 100MB limit
-app.config['JWT_ACCESS_TOKEN_EXPIRES'] = 600
-app.config['PROPAGATE_EXCEPTIONS'] = True
+app.config["JWT_ACCESS_TOKEN_EXPIRES"] = 600
+app.config["PROPAGATE_EXCEPTIONS"] = True
 app.url_map.strict_slashes = False
 
 jwt = JWTManager(app)
@@ -46,21 +42,25 @@ CORS(
 def get_exams():
     return "api"
 
+
 @app.route("/api/error", methods=["GET"])
 def make_error():
-    3/0
+    3 / 0
     return "hello"
+
 
 @jwt.expired_token_loader
 def expired_token_callback(jwt_header, jwt_payload):
-    return jsonify({"msg": "Token has expired"}), 401
+    return jsonify({"message": "Token has expired"}), 401
+
 
 # Catch JWT-related exceptions globally
 @app.errorhandler(ExpiredSignatureError)
 def handle_expired_signature_error(e):
     print("expired token signature")
     logging.error(f"[ERROR!] {request.method} {request.path} - {str(e)}", exc_info=True)
-    return jsonify(msg="Token has expired"), 401
+    return jsonify({"message": "Token has expired"}), 401
+
 
 @app.route("/secret-log")
 def show_secret_log():
@@ -69,6 +69,7 @@ def show_secret_log():
     app.logger.debug("debug level dubug info!!!")
     print("logging.............")
     return jsonify({"message": "Logging test completed! Check logs/server.log."})
+
 
 # # Log every request (before request runs)
 # @app.before_request
@@ -80,14 +81,16 @@ def show_secret_log():
 #     print("inside errorhandler")
 #     logging.error(f"[ERROR] {request.method} {request.path} - {str(e)}", exc_info=True)
 #     return jsonify(message=str(e)), 400
-    
-    # ✅ Catch all exceptions, including Flask-RESTX ones
+
+
+# ✅ Catch all exceptions, including Flask-RESTX ones
 @app.errorhandler(Exception)
 def handle_general_exception(e):
     """Catch-all error handler for unexpected exceptions."""
     logging.error(f"[ERROR!] {request.method} {request.path} - {str(e)}", exc_info=True)
 
     return {"message": "An unexpected error occurred. Please try again later."}, 400
+
 
 #     print("Exception occurrrring", e)
 #     # Avoid triggering a second response if Flask-RESTX has already handled it
@@ -100,31 +103,33 @@ def handle_general_exception(e):
 #     # If it's an HTTPException (like BadRequest, NotFound), use its status code
 #     if isinstance(e, HTTPException):
 #         return jsonify(message=e.description), e.code
-    
+
 #     if isinstance(e, ExpiredSignatureError):
 #         print("token expired getting executed")
 #         return jsonify(msg="Token has expired"), 401
-    
+
 #     # Otherwise, return a generic 500 error
 #     return jsonify(message="Internal Server Error!"), 500
-    
+
+
 @api.errorhandler(Exception)
 def handle_api_exception(e):
     logging.error(f"[ERROR!] {request.method} {request.path} - {str(e)}", exc_info=True)
-    
+
     print("Exception occurrrring 222", e)
-    
+
     # Only return JSON for exceptions that are HTTPExceptions
     if isinstance(e, BadRequest):
-        return {"message": str(e)} 
-        #return jsonify(message=str(e)), 400
-        
+        return {"message": str(e)}, e.code
+        # return jsonify(message=str(e)), 400
+
     if isinstance(e, ExpiredSignatureError):
         print("token expired getting executed")
-        return {"msg": "Token has expired"}, 401
-    return {"message": str(e)} 
+        return {"message": "Token has expired"}, 401
+    return {"message": str(e)}
     return jsonify(message="Internal Server Error"), 500
-    
+
+
 # @app.errorhandler
 # def handle_exception_3(e):
 #     print("inside errorhandler")
@@ -140,4 +145,4 @@ def handle_api_exception(e):
 
 if __name__ == "__main__":
     print("this is getting executed")
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(host="0.0.0.0", port=5001, debug=True)
