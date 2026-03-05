@@ -255,15 +255,36 @@ class Student(Resource):
     @students_ns.response(204, "Student successfully deleted")
     def delete(self, student_id):
         """Delete a specific student"""
-        # Delete student data from the database
-        sql = "DELETE FROM students WHERE id = %s"
-        result = db_helper.execute(sql, (student_id,))
+        try:
+            # First check if the student exists
+            check_sql = "SELECT id FROM students WHERE id = %s"
+            existing_student = db_helper.fetch_one(check_sql, (student_id,))
+            if not existing_student:
+                students_ns.abort(404, "Student not found")
 
-        # # Check if any rows were deleted
-        # if result == 0:
-        #     students_ns.abort(404, "Student not found")
+            # Prepare queries for transaction
+            # 1. Delete from student_subjects table first (to handle foreign key constraints)
+            # 2. Delete from students table
+            queries_and_params = [
+                ("DELETE FROM student_subjects WHERE student_id = %s", (student_id,)),
+                ("DELETE FROM students WHERE id = %s", (student_id,))
+            ]
 
-        return None, 204
+            # Execute both deletions in a single transaction
+            results = db_helper.execute_with_transaction(queries_and_params)
+            
+            # Check if the student was actually deleted (second query result)
+            student_deleted_count = results[1][1]  # rowcount from second query
+            if student_deleted_count == 0:
+                students_ns.abort(404, "Student not found")
+
+            return None, 204
+
+        except Exception as e:
+            # If any error occurs during the transaction, it will be automatically rolled back
+            # Log the error and return appropriate response
+            print(f"Error deleting student {student_id}: {str(e)}")
+            students_ns.abort(500, "Internal server error occurred while deleting student")
 
 
 @students_ns.route("/profile")

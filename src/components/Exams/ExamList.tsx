@@ -98,20 +98,13 @@ export default function ExamList({
     try {
       const url = `${import.meta.env.VITE_API_BASE_URL}/files/students/${selectedSubmission?.student_id}/${file_name}`;
       window.open(url, '_blank');
-      // const response = await api.get(`/files/exams/${file_name}`, {
-      //   responseType: 'blob',
-      // });
-      // const url = window.URL.createObjectURL(new Blob([response.data]));
-      // const link = document.createElement('a');
-      // link.href = url;
-      // link.setAttribute('download', file_name);
-      // document.body.appendChild(link);
-      // link.click();
-      // link.remove();
     } catch (error) {
       console.error('Error downloading the file:', error);
     }
   };
+
+  // Filename may only contain letters, numbers, underscore, hyphen, and period (e.g. .pdf)
+  const SAFE_FILENAME_REGEX = /^[a-zA-Z0-9_.-]+$/;
 
   const handleSubmit = async () => {
     try {
@@ -123,6 +116,13 @@ export default function ExamList({
       }
 
       if (selectedFile) {
+        const fileName = selectedFile.name;
+        if (!SAFE_FILENAME_REGEX.test(fileName)) {
+          alert(
+            'The file name contains invalid characters. Please use only letters, numbers, underscores (_), hyphens (-), and periods (e.g. .pdf). Avoid characters like * & ^ % $ # @ !'
+          );
+          return;
+        }
         formData.append('file', selectedFile);
       }
       if (userComment) {

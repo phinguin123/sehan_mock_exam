@@ -15,44 +15,6 @@ const studentData = {
   grade: 11,
 };
 
-// async function getExams(): Promise<Exam[]> {
-//   // In a real application, this would be an API call
-//   return [
-//     {
-//       id: 1,
-//       title: 'Math Exam',
-//       subject: 'Mathematics',
-//       grade: 'pre-IB',
-//     },
-//     {
-//       id: 2,
-//       title: 'English Literature Exam',
-//       subject: 'English',
-//       grade: 'pre-IB',
-//     },
-//     {
-//       id: 3,
-//       title: 'Chemistry Exam',
-//       subject: 'Chemistry',
-//       grade: '11',
-//     },
-//     {
-//       id: 4,
-//       title: 'English A Exam',
-//       subject: 'English A',
-//       grade: 'pre-IB',
-//     },
-//     {
-//       id: 5,
-//       title: 'Physics Exam',
-//       subject: 'Physics',
-//       grade: '12',
-//     },
-//   ];
-// }
-
-// async function getExams(): Promise<Exam[]> {
-// }
 async function getExams(): Promise<Exam[]> {
   const response = await api.get('/exams/students');
   return response.data;
@@ -111,14 +73,10 @@ export default function ExamPage() {
   };
 
   return (
-    // <div className="container mx-auto px-4 py-8">
-    //   <h1 className="text-3xl font-bold mb-6">Available Exams</h1>
-    //   <ExamList initialExams={exams} />
-    // </div>
     <div className="min-h-screen bg-gradient-to-r from-blue-500 to-purple-600 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         <h1 className="text-5xl font-extrabold text-white text-center mb-12">
-          2025 세한아카데미 IB 학력평가
+          2026 세한아카데미 IB 학력평가
         </h1>
         <div className="flex flex-col lg:flex-row gap-8 justify-center">
           <div className="bg-white bg-opacity-20 backdrop-filter backdrop-blur-lg rounded-xl p-8">
@@ -180,12 +138,6 @@ export default function ExamPage() {
                     60 minutes{/* {currentExam.duration} minutes */}
                   </span>
                 </div>
-                {/* <div className="flex items-center">
-                <FileText className="w-4 h-4 mr-2 text-yellow-500" />
-                <span className="text-sm text-gray-600">
-                  {currentExam.totalQuestions} questions
-                </span>
-              </div> */}
               </div>
               <div className="mb-6">
                 <h3 className="text-lg font-semibold mb-2 text-gray-700">
@@ -204,25 +156,9 @@ export default function ExamPage() {
                   <li>Exam will end when the time ends</li>
                   <li>Only submit pdf files</li>
                   <li>File size can't exceed 100MB</li>
+                  <li>Made by 김지태 (phinguin) 컴싸 강사님</li>
                 </ul>
               </div>
-              {/* <div>
-              <h3 className="text-lg font-semibold mb-2 text-gray-700">
-                Need Help?
-              </h3>
-              <div className="flex items-center mb-2">
-                <HelpCircle className="w-4 h-4 mr-2 text-blue-500" />
-                <a href="#" className="text-sm text-blue-500 hover:underline">
-                  View FAQ
-                </a>
-              </div>
-              <div className="flex items-center">
-                <MessageSquare className="w-4 h-4 mr-2 text-green-500" />
-                <a href="#" className="text-sm text-green-500 hover:underline">
-                  Contact Support
-                </a>
-              </div>
-            </div> */}
             </motion.div>
           </div>
         </div>

@@ -937,7 +937,7 @@ export default function GradeExam() {
                         <span className="ml-4">Score: {calculatedScore}/7</span>
                       </div>
                       <Textarea
-                        placeholder="Grading Comment"
+                        placeholder="Grading Comment (for parent)"
                         value={comment}
                         onChange={(e) => setComment(e.target.value)}
                         rows={10}
@@ -947,7 +947,7 @@ export default function GradeExam() {
                         <CardHeader>
                           <CardTitle>
                             <Upload className="inline mr-2 h-4 w-4" />
-                            Attach Commented File
+                            Attach Commented File (for student)
                           </CardTitle>
                         </CardHeader>
                         <CardContent>

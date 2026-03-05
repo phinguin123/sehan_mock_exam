@@ -145,34 +145,43 @@ db_helper = DBHelper()
 
 
 def calculate_remaining_time():
-    # Define the target date and time (e.g., 2025-12-31 23:59:59)
+    """
+    Calculates the remaining seconds to a target time fetched from the database.
+    """
     seoul_tz = pytz.timezone("Asia/Seoul")
     current_time = datetime.now(seoul_tz)
 
-    target_date = seoul_tz.localize(datetime(2025, 3, 11, 22, 0, 0))
-
     # Fetch target_date from db
-    sql = """
-        SELECT exam_end_time FROM settings;
-    """
+    sql = "SELECT exam_end_time FROM settings;"
     result = db_helper.fetch_one(sql)
 
-    if not result:
+    if not result or not result["exam_end_time"]:
         return 0
 
+    exam_end_time_from_db = result["exam_end_time"]
+
+    # --- This is the crucial, safer part ---
+    # Check if the datetime from the DB is naive. If so, make it aware.
+    if isinstance(exam_end_time_from_db, datetime) and exam_end_time_from_db.tzinfo is None:
+        target_date = seoul_tz.localize(exam_end_time_from_db)
+    else:
+        # If it's already aware, just make sure it's in the correct timezone.
+        target_date = exam_end_time_from_db.astimezone(seoul_tz)
+    
+    logger.info(f"Target date (KST): {target_date}")
+    logger.info(f"Current date (KST): {current_time}")
+
     # Calculate the difference in seconds
-    target_date = seoul_tz.localize(result["exam_end_time"])
-    logger.info(f"target date:{target_date}")
-    log_message = f"target date and current date:{target_date},{current_time}"
-    logger.info(log_message)
+    remaining_seconds = (target_date - current_time).total_seconds()
 
-    remaining_time = round((target_date - current_time).total_seconds())
+    # We only care about the final rounded integer value
+    remaining_time = round(remaining_seconds)
 
-    log_message = f"the remaining time is : {remaining_time}"
-    logger.info(log_message)
+    logger.info(f"The remaining time is: {remaining_time} seconds")
 
+    # If the time has passed, return 0.
     if remaining_time < 0:
-        remaining_time = 0
+        return 0
 
     return remaining_time
 
@@ -551,7 +560,8 @@ class ExamSubmissions(Resource):
             ):  # Create a folder for the user if it doesn't exist
                 os.makedirs(student_folder)
 
-            filename = secure_filename(file.filename)
+            # filename = secure_filename(file.filename)
+            filename = file.filename
 
             if filename == "pdf":
                 filename = f"{uuid.uuid4().hex}.pdf"

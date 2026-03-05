@@ -212,7 +212,7 @@ class AuthAdminLogin(Resource):
 
         # Default password for admin, you can change this as needed
         admin_password = (
-            "adminpassword"  # Replace with your actual admin password, ideally hashed
+            "2550"  # Replace with your actual admin password, ideally hashed
         )
 
         # Check if the provided password matches the stored admin password
