@@ -103,8 +103,8 @@ export default function ExamList({
     }
   };
 
-  // Filename may only contain letters, numbers, underscore, hyphen, and period (e.g. .pdf)
-  const SAFE_FILENAME_REGEX = /^[a-zA-Z0-9_.-]+$/;
+  // Filename must not contain these characters: ! @ # $ % ^ & *
+  const INVALID_FILENAME_REGEX = /[!@#$%^&*]/;
 
   const handleSubmit = async () => {
     try {
@@ -117,9 +117,9 @@ export default function ExamList({
 
       if (selectedFile) {
         const fileName = selectedFile.name;
-        if (!SAFE_FILENAME_REGEX.test(fileName)) {
+        if (INVALID_FILENAME_REGEX.test(fileName)) {
           alert(
-            'The file name contains invalid characters. Please use only letters, numbers, underscores (_), hyphens (-), and periods (e.g. .pdf). Avoid characters like * & ^ % $ # @ !'
+            'The file name contains invalid characters (! @ # $ % ^ & *). Please remove them and try again.'
           );
           return;
         }
